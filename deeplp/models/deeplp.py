@@ -659,7 +659,8 @@ class DeepLP:
         self.macro_f1s.append(macro_f1)
         self.regularize_vals.append(regularize_val)
 
-        with open(f'accs/{self.log_name}.csv', 'a') as csvfile:
+        # with open(f'accs/{self.log_name}.csv', 'a') as csvfile:
+        with open(f'accs.csv', 'a') as csvfile:
             writer = csv.writer(csvfile)
             writer.writerow([true_accuracy,validation_accuracy])
 
