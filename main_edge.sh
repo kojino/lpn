@@ -5,9 +5,10 @@
 #SBATCH --mem 3999
 #SBATCH -J edge_master
 #SBATCH -p shared
+#SBATCH --reservation=kojinrebuttal
 
 change_bs=(0)
-clamps=(0)
+clamps=(1)
 crossval_ks=(1 5)
 datas=('cora')
 # datas=('pubmed')
@@ -17,12 +18,12 @@ logistics=(0)
 losss=('log')
 loss_class_masss=(1)
 lrs=(0.01)
-models=('wrbf')
-num_epochs=(2000)
-num_iters=(100)
+models=('edge')
+num_epochs=(1000)
+num_iters=(100 90 80 70 60 50 40 30 20 10)
 num_sampless=(100)
 parameter_seeds=(0)
-regularizes=(-30 -16 -14 -12 -10 -8 -6 -4 -2 0)
+regularizes=(-30)
 regularize_types=('l2')
 split_seeds=(0 1 2 3 4 5 6 7 8 9)
 asymmetrics=(1)
@@ -35,6 +36,8 @@ sparse_edgess=(0)
 regularize_weights=(-14)
 clamp_scales=(0.01)
 
+for num_iter in ${num_iters[@]}
+do
 for crossval_k in ${crossval_ks[@]}
 do
 for model in ${models[@]}
@@ -59,8 +62,7 @@ for regularize_type in ${regularize_types[@]}
 do
 for regularize in ${regularizes[@]}
 do
-for num_iter in ${num_iters[@]}
-do
+
 for has_features in ${has_featuress[@]}
 do
 for change_b in ${change_bs[@]}

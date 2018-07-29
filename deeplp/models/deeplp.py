@@ -662,7 +662,7 @@ class DeepLP:
 
         with open(f'accs/{self.log_name}.csv', 'a') as csvfile:
         # with open(f'accs.csv', 'a') as csvfile:
-            writer = csv.writer(csvfile)cat
+            writer = csv.writer(csvfile)
             writer.writerow([true_accuracy,validation_accuracy])
 
         # print parameters every epoch
