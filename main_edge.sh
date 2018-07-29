@@ -5,7 +5,6 @@
 #SBATCH --mem 3999
 #SBATCH -J edge_master
 #SBATCH -p shared
-#SBATCH --reservation=kojinrebuttal
 
 change_bs=(0)
 clamps=(1)
@@ -20,16 +19,16 @@ loss_class_masss=(1)
 lrs=(0.01)
 models=('edge')
 num_epochs=(1000)
-num_iters=(100 90 80 70 60 50 40 30 20 10)
+num_iters=(20)
 num_sampless=(100)
 parameter_seeds=(0)
-regularizes=(-30)
+regularizes=(-30 -16 -14 -12 -10 -8 -6 -4 -2 0 2 4)
 regularize_types=('l2')
 split_seeds=(0 1 2 3 4 5 6 7 8 9)
 asymmetrics=(1)
 unlabel_probs=(0.99)
 weight_normalizations=('softmax')
-confidences=(0)
+confidences=('raw_reduced' 'raw')
 datatypes=('linqs')
 profiles=(0)
 sparse_edgess=(0)

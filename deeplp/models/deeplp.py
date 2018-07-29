@@ -337,8 +337,6 @@ class DeepLP:
         Returns:
             accuracy
         """
-        if self.confidence:
-            yhat = yhat[:-1]
         yhat = tf.argmax(yhat,axis=2)
         y = tf.argmax(y,axis=2)
         mask = tf.reduce_max(mask,axis=2)

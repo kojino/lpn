@@ -59,8 +59,6 @@ def build_and_train_model(args,
                          is_labeled,
                          args.num_iter,
                          unlabeled_indices)
-    if args.confidence:
-        unlabeled_pred = unlabeled_pred[:,:-1]
     y_pred = np.argmax(unlabeled_pred,axis=1)
     y_true = np.argmax(true_labels[unlabeled_indices],axis=1)
     accuracy = np.mean(y_pred == y_true)
@@ -137,47 +135,47 @@ def build_and_train_model(args,
 
 
 def main(args):
-    # if args.datatype == 'flip':
-    #     if args.data == 'cora':
-    #         args.num_iter = 20
-    #         args.num_epoch = 5000
-    #     elif args.data == 'dblp':
-    #         args.num_iter = 20
-    #         args.num_epoch = 1200
-    #     elif args.data == 'flickr':
-    #         args.num_iter = 10
-    #         args.num_epoch = 500
-    #     elif args.data == 'imdb':
-    #         args.num_iter = 10
-    #         args.num_epoch = 10000
-    #     elif args.data == 'industry':
-    #         args.num_iter = 10
-    #         args.num_epoch = 10000
+    if args.datatype == 'flip':
+        if args.data == 'cora':
+            args.num_iter = 20
+            args.num_epoch = 5000
+        elif args.data == 'dblp':
+            args.num_iter = 20
+            args.num_epoch = 1200
+        elif args.data == 'flickr':
+            args.num_iter = 10
+            args.num_epoch = 500
+        elif args.data == 'imdb':
+            args.num_iter = 10
+            args.num_epoch = 10000
+        elif args.data == 'industry':
+            args.num_iter = 10
+            args.num_epoch = 10000
 
-    # if args.datatype == 'linqs':
-    #     if args.data == 'cora':
-    #         args.num_iter = 20
-    #         args.num_epoch = 5000
-    #     elif args.data == 'citeseer':
-    #         args.num_iter = 50
-    #         args.num_epoch = 5000
-    #     elif args.data == 'pubmed':
-    #         args.num_iter = 20
-    #         args.num_epoch = 2000
+    if args.datatype == 'linqs':
+        if args.data == 'cora':
+            args.num_iter = 20
+            args.num_epoch = 5000
+        elif args.data == 'citeseer':
+            args.num_iter = 50
+            args.num_epoch = 5000
+        elif args.data == 'pubmed':
+            args.num_iter = 20
+            args.num_epoch = 2000
 
-    d = {
-        0:-12,
-        1:-6,
-        2:-8,
-        3:-6,
-        4:-4,
-        5:-12,
-        6:4,
-        7:-14,
-        8:-30,
-        9:-10
-    }
-    args.regularize = d[args.split_seed]
+    # d = {
+    #     0:-12,
+    #     1:-6,
+    #     2:-8,
+    #     3:-6,
+    #     4:-4,
+    #     5:-12,
+    #     6:4,
+    #     7:-14,
+    #     8:-30,
+    #     9:-10
+    # }
+    # args.regularize = d[args.split_seed]
 
     if args.crossval_k != 1:
         args.num_epoch = int(args.num_epoch / args.crossval_k)
@@ -410,7 +408,7 @@ if __name__ == '__main__':
     parser.add_argument('--weight_normalization', default='softmax', type=str,
                         help='method for normalizing the weight matrix')
 
-    parser.add_argument('--confidence', default=0, type=int,
+    parser.add_argument('--confidence', type=str,
                         help='whether to use unknown class for att')
 
     parser.add_argument('--datatype', default='linqs', type=str,

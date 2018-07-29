@@ -82,8 +82,6 @@ def load_data(data,datatype,directed=0,confidence=False,model='edge'):
     print("Loading labels...")
     true_labels = np.loadtxt(data_path+'/y.csv',delimiter=',')
     true_labels_one_hot = array_to_one_hot(true_labels)
-    if confidence:
-        true_labels_one_hot = np.hstack((true_labels_one_hot,np.zeros((true_labels.shape[0],1))))
 
     print("Loading edge features...")
     if datatype == 'linqs':
@@ -92,8 +90,14 @@ def load_data(data,datatype,directed=0,confidence=False,model='edge'):
                 edge_features = np.loadtxt(data_path+'/node_features.csv', delimiter=',')
                 edge_features = node_features_np_to_dense(edge_features)
             else:
-                print('Weights: Asymmetric')
-                edge_features = np.loadtxt(data_path+'/Easym_normalized_reduced.csv',delimiter=',')
+                if confidence == 'raw':
+                    edge_features = np.loadtxt(data_path+'/features_raw_reduced.csv',delimiter=',')
+                elif confidence == 'raw_reduced':
+                    edge_features = np.loadtxt(data_path+'/features_raw.csv',delimiter=',')
+                else:
+                    print('Weights: Asymmetric')
+                    edge_features = np.loadtxt(data_path+'/Easym_normalized_reduced.csv',delimiter=',')
+            
         else:
             print('Weights: Symmetric')
             # edge_features = np.loadtxt(data_path+'/Esym_new.csv',delimiter=',')
@@ -222,8 +226,6 @@ def random_unlabel(true_labels,unlabel_prob,seed=None,confidence=False):
     np.random.seed(seed)
 
     num_classes = true_labels.shape[1]
-    if confidence:
-        num_classes -= 1
     labeled_indices_from_class = []
     for class_id in range(num_classes):
         labeled_indices_from_class.append(np.random.choice(np.where(true_labels[:,class_id])[0]))
@@ -257,9 +259,6 @@ def calc_masks(true_labels, labeled_indices, unlabeled_indices, logistic=False, 
         k = labels.shape[1]
         labels[unlabeled_indices] = 1/k
 
-    if confidence:
-        labels[unlabeled_indices] = 0
-        labels[unlabeled_indices,-1] = 1
 
     return labels, is_labeled
 
