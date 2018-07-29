@@ -56,7 +56,7 @@ def create_weighted_graph(features,graph):
     return weights, graph, sigma
 
 
-def load_data(data,datatype,directed=0,confidence=False):
+def load_data(data,datatype,directed=0,confidence=False,model='edge'):
     """Load datasets
     Arguments:
         data: name of dataset to load
@@ -88,8 +88,12 @@ def load_data(data,datatype,directed=0,confidence=False):
     print("Loading edge features...")
     if datatype == 'linqs':
         if directed:
-            print('Weights: Asymmetric')
-            edge_features = np.loadtxt(data_path+'/Easym_normalized_reduced.csv',delimiter=',')
+            if model == 'wrbf':
+                edge_features = np.loadtxt(data_path+'/node_features.csv', delimiter=',')
+                edge_features = node_features_np_to_dense(edge_features)
+            else:
+                print('Weights: Asymmetric')
+                edge_features = np.loadtxt(data_path+'/Easym_normalized_reduced.csv',delimiter=',')
         else:
             print('Weights: Symmetric')
             # edge_features = np.loadtxt(data_path+'/Esym_new.csv',delimiter=',')
@@ -277,3 +281,16 @@ def select_features(labeled_indices,features,labels,lasso=False,max_features=200
         selected_features = features[:,np.argsort(np.sum(features>0,axis=0))[::-1]][:,:max_features]
         print(selected_features.shape[1],'out of',str(features.shape[1]),'features selected with sorting')
     return selected_features
+
+def node_features_np_to_dense(node_features, values=False):
+    """
+    Convert np array with each row being (row_index,col_index,value)
+    of a graph to a scipy csr matrix.
+    """
+    num_rows = int(max(node_features[:, 0]) + 1)
+    num_cols = int(max(node_features[:, 1]) + 1)
+    vals = np.ones(len(node_features[:, 0]))
+    csr = csr_matrix(
+        (vals, (node_features[:, 0], node_features[:, 1])),
+        shape=(num_rows, num_cols))
+    return csr.toarray()

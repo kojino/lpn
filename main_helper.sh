@@ -3,9 +3,8 @@
 #SBATCH -e val2.%j.err
 #SBATCH -t 7-00:00:00
 #SBATCH --mem 3999
-#SBATCH -J imdb
+#SBATCH -J main
 #SBATCH -p shared
-#SBATCH --account=ysinger_group
 
 python -m deeplp.main \
 --change_b $1 \

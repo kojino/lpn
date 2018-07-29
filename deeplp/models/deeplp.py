@@ -93,6 +93,7 @@ class DeepLP:
 
         # see g(x) under _forwardprop for how these parameters are used
         if self.clamp:
+            print("cllaaaaamp")
             self.c = 1 + self.clamp_scale * tf.Variable(0,dtype=tf.float32)
             self.a = self.clamp_scale * tf.Variable(0,dtype=tf.float32)
             self.d = 0.1 * self.clamp_scale * tf.Variable(0,dtype=tf.float32)
@@ -659,9 +660,9 @@ class DeepLP:
         self.macro_f1s.append(macro_f1)
         self.regularize_vals.append(regularize_val)
 
-        # with open(f'accs/{self.log_name}.csv', 'a') as csvfile:
-        with open(f'accs.csv', 'a') as csvfile:
-            writer = csv.writer(csvfile)
+        with open(f'accs/{self.log_name}.csv', 'a') as csvfile:
+        # with open(f'accs.csv', 'a') as csvfile:
+            writer = csv.writer(csvfile)cat
             writer.writerow([true_accuracy,validation_accuracy])
 
         # print parameters every epoch
@@ -703,12 +704,12 @@ class DeepLP:
         #           # "max_neigh:",max_neigh,
         sys.stdout.flush()
 
-        with open("as.csv", "a") as fp:
-            wr = csv.writer(fp, dialect='excel')
-            wr.writerow([clamp_a])
-        with open("bs.csv", "a") as fp:
-            wr = csv.writer(fp, dialect='excel')
-            wr.writerow([clamp_c])
+        # with open("as.csv", "a") as fp:
+        #     wr = csv.writer(fp, dialect='excel')
+        #     wr.writerow([clamp_a])
+        # with open("bs.csv", "a") as fp:
+        #     wr = csv.writer(fp, dialect='excel')
+        #     wr.writerow([clamp_c])
 
         if math.isnan(objective):
             self.nanned = True

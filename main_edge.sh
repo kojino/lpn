@@ -2,14 +2,12 @@
 #SBATCH -o val1.%j.txt
 #SBATCH -e val1.%j.err
 #SBATCH -t 06:50:50
-#SBATCH --mem 14999
+#SBATCH --mem 3999
 #SBATCH -J edge_master
 #SBATCH -p shared
-#SBATCH --reservation=koshiba
-#SBATCH --account=ysinger_group
 
 change_bs=(0)
-clamps=(3)
+clamps=(0)
 crossval_ks=(1 5)
 datas=('cora')
 # datas=('pubmed')
@@ -19,14 +17,14 @@ logistics=(0)
 losss=('log')
 loss_class_masss=(1)
 lrs=(0.01)
-models=('edge')
-num_epochs=(5000)
+models=('wrbf')
+num_epochs=(2000)
 num_iters=(100)
 num_sampless=(100)
 parameter_seeds=(0)
-regularizes=(-4)
+regularizes=(-30 -16 -14 -12 -10 -8 -6 -4 -2 0)
 regularize_types=('l2')
-split_seeds=(4)
+split_seeds=(0 1 2 3 4 5 6 7 8 9)
 asymmetrics=(1)
 unlabel_probs=(0.99)
 weight_normalizations=('softmax')

@@ -110,6 +110,24 @@ def build_and_train_model(args,
                                     seed=args.parameter_seed,
                                     sparse_edges=args.sparse_edges,
                                     clamp_scale=args.clamp_scale)
+    elif args.model == 'wrbf':
+        trained_model = DeepLP_WRBF(args.profile,
+                                'wrbf',
+                                log_name,
+                                edge_features, # [:,6:] for edge features only
+                                graph,
+                                labels.shape[1],
+                                unlabeled_indices,
+                                confidence=args.confidence,
+                                clamp=args.clamp,
+                                loss_class_mass=args.loss_class_mass,
+                                lr=args.lr,
+                                num_iter=args.num_iter,
+                                regularize_theta=2**args.regularize_theta,
+                                regularize_weight=2**args.regularize_weight,
+                                seed=args.parameter_seed,
+                                sparse_edges=args.sparse_edges,
+                                clamp_scale=args.clamp_scale)       
 
     print('Model Built!')
     sys.stdout.flush()
@@ -173,7 +191,7 @@ def main(args):
     print(log_name)
 
     true_labels, edge_features, node_features, graph \
-    = load_data(args.data,args.datatype,directed=args.asymmetric,confidence=args.confidence)
+    = load_data(args.data,args.datatype,directed=args.asymmetric,confidence=args.confidence,model=args.model)
     U,D,B,R = utils.load_data(args.data,args.datatype,'datasets')
     edges = np.array(B.edges())
     sources,sinks = edges[:,0],edges[:,1]
@@ -186,46 +204,47 @@ def main(args):
 
     labels, is_labeled = calc_masks(true_labels, labeled_indices, unlabeled_indices, logistic=args.logistic, confidence=args.confidence)
 
-    print("Generating Seed Dependent Features...")
-    seed_to_node_lengths = []
-    for i in labeled_indices:
-        shortest_paths_seed = nx.shortest_path_length(B,source=int(i))
-        path_lengths = [i[1] for i in sorted(shortest_paths_seed.items())]
-        seed_to_node_lengths.append(path_lengths)
-    seed_to_node_lengths = np.array(seed_to_node_lengths)
-    labels_for_seeds = np.argmax(true_labels[labeled_indices],axis=1)
-    labels_for_seeds_dict = {}
-    for i,label in enumerate(labels_for_seeds):
-        if label in labels_for_seeds_dict:
-            labels_for_seeds_dict[label].append(i)
+    if args.model != 'wrbf':
+        print("Generating Seed Dependent Features...")
+        seed_to_node_lengths = []
+        for i in labeled_indices:
+            shortest_paths_seed = nx.shortest_path_length(B,source=int(i))
+            path_lengths = [i[1] for i in sorted(shortest_paths_seed.items())]
+            seed_to_node_lengths.append(path_lengths)
+        seed_to_node_lengths = np.array(seed_to_node_lengths)
+        labels_for_seeds = np.argmax(true_labels[labeled_indices],axis=1)
+        labels_for_seeds_dict = {}
+        for i,label in enumerate(labels_for_seeds):
+            if label in labels_for_seeds_dict:
+                labels_for_seeds_dict[label].append(i)
+            else:
+                labels_for_seeds_dict[label] = [i]
+
+        seed_features = []
+        for label in labels_for_seeds_dict:
+            indices = labels_for_seeds_dict[label]
+            label_seed_to_node_lengths = seed_to_node_lengths[indices]
+            label_min_len_to_seed = np.min(label_seed_to_node_lengths,axis=0)[sources]
+            label_mean_len_to_seed = np.mean(label_seed_to_node_lengths,axis=0)[sources]
+            seed_features.append(label_min_len_to_seed)
+            seed_features.append(label_mean_len_to_seed)
+
+        min_len_to_seed = np.min(seed_to_node_lengths,axis=0)[sources]
+        mean_len_to_seed = np.mean(seed_to_node_lengths,axis=0)[sources]
+        seed_features.append(min_len_to_seed)
+        seed_features.append(mean_len_to_seed)
+        seed_features = np.array(seed_features).T
+        seed_features = utils.pos_normalize(seed_features)
+
+
+        print("Seed Dependent Features Done!")
+        # print(edge_features.shape)
+
+
+        if args.datatype == 'linqs':
+            edge_fetures = np.hstack([edge_features,seed_features])
         else:
-            labels_for_seeds_dict[label] = [i]
-
-    seed_features = []
-    for label in labels_for_seeds_dict:
-        indices = labels_for_seeds_dict[label]
-        label_seed_to_node_lengths = seed_to_node_lengths[indices]
-        label_min_len_to_seed = np.min(label_seed_to_node_lengths,axis=0)[sources]
-        label_mean_len_to_seed = np.mean(label_seed_to_node_lengths,axis=0)[sources]
-        seed_features.append(label_min_len_to_seed)
-        seed_features.append(label_mean_len_to_seed)
-
-    min_len_to_seed = np.min(seed_to_node_lengths,axis=0)[sources]
-    mean_len_to_seed = np.mean(seed_to_node_lengths,axis=0)[sources]
-    seed_features.append(min_len_to_seed)
-    seed_features.append(mean_len_to_seed)
-    seed_features = np.array(seed_features).T
-    seed_features = utils.pos_normalize(seed_features)
-
-
-    print("Seed Dependent Features Done!")
-    # print(edge_features.shape)
-
-
-    if args.datatype == 'linqs':
-        edge_fetures = np.hstack([edge_features,seed_features])
-    else:
-        edge_fetures = seed_features
+            edge_fetures = seed_features
 
 
     if args.crossval_k == 1:
