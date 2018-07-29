@@ -172,14 +172,14 @@ def main(args):
     print("File Name")
     print(log_name)
 
-    true_labels, features, edge_features, node_features, graph \
+    true_labels, edge_features, node_features, graph \
     = load_data(args.data,args.datatype,directed=args.asymmetric,confidence=args.confidence)
-    U,D,B,R,node_features = utils.load_data(args.data,args.datatype,'datasets')
+    U,D,B,R = utils.load_data(args.data,args.datatype,'datasets')
     edges = np.array(B.edges())
     sources,sinks = edges[:,0],edges[:,1]
 
     labeled_indices, unlabeled_indices = \
-        random_unlabel(true_labels,args.unlabel_prob,features,
+        random_unlabel(true_labels,args.unlabel_prob,
                        seed=args.split_seed,confidence=args.confidence)
 
     num_nodes, num_classes = true_labels.shape

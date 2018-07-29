@@ -85,17 +85,6 @@ def load_data(data,datatype,directed=0,confidence=False):
     if confidence:
         true_labels_one_hot = np.hstack((true_labels_one_hot,np.zeros((true_labels.shape[0],1))))
 
-    print("Loading features...")
-    if datatype == 'linqs':
-        features = np.loadtxt(data_path+'/x.csv',delimiter=',')
-        num_nodes = np.max(features[:,0]) + 1
-        num_features = np.max(features[:,1]) + 1
-        features_sp = csr_matrix((features[:,2], (features[:,0], features[:,1])), shape=(num_nodes, num_features))
-        features_sp_normalized = normalize(features_sp, norm='l1', axis=1)
-    else:
-        features_sp_normalized = []
-
-
     print("Loading edge features...")
     if datatype == 'linqs':
         if directed:
@@ -115,12 +104,12 @@ def load_data(data,datatype,directed=0,confidence=False):
 
     print("Loading graph...")
     graph = np.loadtxt(data_path+'/Gsym.csv',delimiter=',')
-    num_nodes = max(max(graph[:,0]),max(graph[:,1])) + 1
-    graph_sp = csr_matrix((graph[:,2], (graph[:,0], graph[:,1])), shape=(num_nodes, num_nodes))
+    num_nodes = int(max(max(graph[:,0]),max(graph[:,1])) + 1)
+    graph_sp = csr_matrix((np.ones((len(graph[:,0]),)), (graph[:,0], graph[:,1])), shape=(num_nodes, num_nodes))
 
     print('Done!')
 
-    return true_labels_one_hot, features_sp_normalized, edge_features, node_features, graph_sp
+    return true_labels_one_hot, edge_features, node_features, graph_sp
 
 
 def prepare_data(labels,
@@ -211,7 +200,7 @@ def prepare_data(labels,
     return train_data, validation_data
 
 
-def random_unlabel(true_labels,unlabel_prob,features,seed=None,confidence=False):
+def random_unlabel(true_labels,unlabel_prob,seed=None,confidence=False):
     """Randomly unlabel nodes based on unlabel probability
     Input:
         true_labels: one-hot encoded true labels
