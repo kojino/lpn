@@ -21,9 +21,9 @@ class DeepLP_Edge(DeepLP_WRBF):
         # print("== theta_edge:", theta_np)
         # print("== b:", b_np)
         super()._save_params(epoch, data)
-        with open("thetas.csv", "a") as fp:
-            wr = csv.writer(fp, dialect='excel')
-            wr.writerow(self.thetas[0])
+        with open(f'accs/{self.log_name}_thetas.csv', 'a') as csvfile:
+            wr = csv.writer(csvfile, dialect='excel')
+            wr.writerow(theta_np[0])
 
     def train(self, data, full_data, epochs):
         self.thetas = []

@@ -658,7 +658,7 @@ class DeepLP:
         self.macro_f1s.append(macro_f1)
         self.regularize_vals.append(regularize_val)
 
-        with open(f'accs/{self.log_name}.csv', 'a') as csvfile:
+        with open(f'accs/{self.log_name}_accs.csv', 'a') as csvfile:
         # with open(f'accs.csv', 'a') as csvfile:
             writer = csv.writer(csvfile)
             writer.writerow([true_accuracy,validation_accuracy])
@@ -702,7 +702,7 @@ class DeepLP:
         #           # "max_neigh:",max_neigh,
         sys.stdout.flush()
 
-        # with open("as.csv", "a") as fp:
+
         #     wr = csv.writer(fp, dialect='excel')
         #     wr.writerow([clamp_a])
         # with open("bs.csv", "a") as fp:
