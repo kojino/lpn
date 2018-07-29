@@ -2,7 +2,7 @@ from __future__ import print_function
 from pathlib import Path
 from random import shuffle
 import random
-from scipy.sparse import coo_matrix, csr_matrix
+
 import argparse
 import copy
 import networkx as nx
@@ -19,60 +19,8 @@ from deeplp.models.deeplp_wrbf import DeepLP_WRBF
 from deeplp.models.lp import LP
 from deeplp.models.utils import accuracy, indices_to_vec
 from deeplp.models.data_prep import select_features
+from datasets import utils
 
-def pos_normalize(features):
-    diff = np.max(
-        features, axis=0, keepdims=True) - np.min(
-            features, axis=0, keepdims=True)
-    return (features - np.min(features, axis=0, keepdims=True)) / diff
-
-def edge_np_to_csr(graph, values=False):
-    """
-    Convert np array with each row being (row_index,col_index,value)
-    of a graph to a scipy csr matrix.
-    """
-    num_nodes = int(max(max(graph[:, 0]), max(graph[:, 1])) + 1)
-    if not values:
-        vals = np.ones(len(graph[:, 0]))
-    csr = csr_matrix(
-        (vals, (graph[:, 0], graph[:, 1])), shape=(num_nodes, num_nodes))
-    return csr
-
-def load_graph(data_path):
-    G_path = f'data/{data_path}/graph_directed.csv'
-    x_path = f'data/{data_path}/features_raw.csv'
-    assert os.path.isfile(
-        x_path), "Node feature file features_raw.csv must exist."
-    assert os.path.isfile(G_path), "Graph file graph_directed.csv must exist."
-
-    node_features = np.loadtxt(x_path, delimiter=',')
-    node_features = node_features_np_to_dense(node_features)
-
-
-    Gdir = np.loadtxt(G_path, delimiter=',')
-    Gdir = edge_np_to_csr(Gdir)
-
-    # make graphs
-    D = nx.from_numpy_matrix(Gdir.toarray(), create_using=nx.MultiDiGraph())
-    U = nx.Graph(D)
-    B = U.to_directed()
-    R = D.reverse()
-
-
-    return U, D, B, R, node_features
-
-def node_features_np_to_dense(node_features, values=False):
-    """
-    Convert np array with each row being (row_index,col_index,value)
-    of a graph to a scipy csr matrix.
-    """
-    num_rows = int(max(node_features[:, 0]) + 1)
-    num_cols = int(max(node_features[:, 1]) + 1)
-    vals = np.ones(len(node_features[:, 0]))
-    csr = csr_matrix(
-        (vals, (node_features[:, 0], node_features[:, 1])),
-        shape=(num_rows, num_cols))
-    return csr.toarray()
 
 def approx_chunk(seq, num):
     avg = len(seq) / float(num)
@@ -224,14 +172,14 @@ def main(args):
     print("File Name")
     print(log_name)
 
-    true_labels, edge_features, graph \
-    = load_data(args.data,'edge','all')
-    U,D,B,R,node_features = load_graph(args.data)
+    true_labels, features, edge_features, node_features, graph \
+    = load_data(args.data,args.datatype,directed=args.asymmetric,confidence=args.confidence)
+    U,D,B,R,node_features = utils.load_data(args.data,args.datatype,'datasets')
     edges = np.array(B.edges())
     sources,sinks = edges[:,0],edges[:,1]
 
     labeled_indices, unlabeled_indices = \
-        random_unlabel(true_labels,args.unlabel_prob,
+        random_unlabel(true_labels,args.unlabel_prob,features,
                        seed=args.split_seed,confidence=args.confidence)
 
     num_nodes, num_classes = true_labels.shape
@@ -267,7 +215,7 @@ def main(args):
     seed_features.append(min_len_to_seed)
     seed_features.append(mean_len_to_seed)
     seed_features = np.array(seed_features).T
-    seed_features = pos_normalize(seed_features)
+    seed_features = utils.pos_normalize(seed_features)
 
 
     print("Seed Dependent Features Done!")

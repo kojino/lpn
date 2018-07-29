@@ -56,59 +56,72 @@ def create_weighted_graph(features,graph):
     return weights, graph, sigma
 
 
-def load_data(data_path, model='edge', feature_type='all'):
+def load_data(data,datatype,directed=0,confidence=False):
+    """Load datasets
+    Arguments:
+        data: name of dataset to load
+        num_components: number of features to extract when applying PCA or l1
+                        when None, use the full feature
+    Returns:
+        true_labels: array of true labels in one-hot encoding
+        features: features of each node
+        graph: graph adjacency matrix, if it doesn't exist, an empty array
+        num_classes: number of classes
+        num_nodes: number of nodes
+        sigma: some initialization of sigma for constructing the graph
     """
-    Load data from given directory.
-    Must have y.csv and G.csv where each row is:
-        y.csv: (labels)
-        G.csv: (source, sink)
-    For attention, must have features as well:
-        x.csv: (feature1, feature2, ...)
-    """
-
-    y_path = f'data/{data_path}/labels.csv'
-    G_path = f'data/{data_path}/graph_symmetric.csv'
-    if feature_type == 'all':
-        x_path = f'data/{data_path}/features.csv'
-    elif feature_type == 'raw_reduced':
-        x_path = f'data/{data_path}/features_raw_reduced.csv'
+    print(f'-----------{data}-----------')
+    file_path =os.path.dirname(__file__)
+    if datatype == 'linqs':
+        p = "../../datasets/linqs/"
     else:
-        if model == 'wrbf':
-            x_path = f'data/{data_path}/node_features.csv'
+        p = "../../datasets/flip/"
+
+    data_path = os.path.normpath(os.path.join(file_path, p+data))
+
+    print("Loading labels...")
+    true_labels = np.loadtxt(data_path+'/y.csv',delimiter=',')
+    true_labels_one_hot = array_to_one_hot(true_labels)
+    if confidence:
+        true_labels_one_hot = np.hstack((true_labels_one_hot,np.zeros((true_labels.shape[0],1))))
+
+    print("Loading features...")
+    if datatype == 'linqs':
+        features = np.loadtxt(data_path+'/x.csv',delimiter=',')
+        num_nodes = np.max(features[:,0]) + 1
+        num_features = np.max(features[:,1]) + 1
+        features_sp = csr_matrix((features[:,2], (features[:,0], features[:,1])), shape=(num_nodes, num_features))
+        features_sp_normalized = normalize(features_sp, norm='l1', axis=1)
+    else:
+        features_sp_normalized = []
+
+
+    print("Loading edge features...")
+    if datatype == 'linqs':
+        if directed:
+            print('Weights: Asymmetric')
+            edge_features = np.loadtxt(data_path+'/Easym_normalized_reduced.csv',delimiter=',')
         else:
-            x_path = f'data/{data_path}/features_raw.csv'
-    assert os.path.isfile(y_path), "Label file labels.csv must exist."
-    assert os.path.isfile(G_path), "Graph file graph_symmetric.csv must exist."
-    if model == 'edge':
-        assert os.path.isfile(x_path), "Label file features.csv must exist."
-
-    true_labels = np.loadtxt(y_path, delimiter=',')
-    true_labels = array_to_one_hot(true_labels)
-
-    graph = np.loadtxt(G_path, delimiter=',')
-    graph = edge_np_to_csr(graph)
-
-    if model in ['edge', 'wrbf']:
-        features = np.loadtxt(x_path, delimiter=',')
-        if model == 'wrbf':
-            features = node_features_np_to_dense(features)
+            print('Weights: Symmetric')
+            # edge_features = np.loadtxt(data_path+'/Esym_new.csv',delimiter=',')
+            edge_features = np.loadtxt(data_path+'/Esym.csv',delimiter=',')
     else:
-        features = np.array([])
+        edge_features = []
 
+    if datatype == 'linqs':
+        node_features = np.loadtxt(data_path+'/Ndir.csv',delimiter=',')
+    else:
+        node_features = []
 
-    return true_labels, features, graph
+    print("Loading graph...")
+    graph = np.loadtxt(data_path+'/Gsym.csv',delimiter=',')
+    num_nodes = max(max(graph[:,0]),max(graph[:,1])) + 1
+    graph_sp = csr_matrix((graph[:,2], (graph[:,0], graph[:,1])), shape=(num_nodes, num_nodes))
 
-def edge_np_to_csr(graph, values=False):
-    """
-    Convert np array with each row being (row_index,col_index,value)
-    of a graph to a scipy csr matrix.
-    """
-    num_nodes = int(max(max(graph[:, 0]), max(graph[:, 1])) + 1)
-    if not values:
-        vals = np.ones(len(graph[:, 0]))
-    csr = csr_matrix(
-        (vals, (graph[:, 0], graph[:, 1])), shape=(num_nodes, num_nodes))
-    return csr
+    print('Done!')
+
+    return true_labels_one_hot, features_sp_normalized, edge_features, node_features, graph_sp
+
 
 def prepare_data(labels,
                  is_labeled,
@@ -198,7 +211,7 @@ def prepare_data(labels,
     return train_data, validation_data
 
 
-def random_unlabel(true_labels,unlabel_prob,seed=None,confidence=False):
+def random_unlabel(true_labels,unlabel_prob,features,seed=None,confidence=False):
     """Randomly unlabel nodes based on unlabel probability
     Input:
         true_labels: one-hot encoded true labels
