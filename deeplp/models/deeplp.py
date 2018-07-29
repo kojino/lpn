@@ -701,6 +701,13 @@ class DeepLP:
                   # "max_neigh:",max_neigh,
         sys.stdout.flush()
 
+        with open("as.csv", "a") as fp:
+            wr = csv.writer(fp, dialect='excel')
+            wr.writerow([clamp_a])
+        with open("bs.csv", "a") as fp:
+            wr = csv.writer(fp, dialect='excel')
+            wr.writerow([clamp_c])
+
         if math.isnan(objective):
             self.nanned = True
         # save and print parameters specific to each link function
