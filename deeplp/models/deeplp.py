@@ -667,38 +667,39 @@ class DeepLP:
         print("== ",
               "epoch:",epoch,
               "labeled loss:",leave_k_out_loss,
-              "regularize_val",regularize_val,
-              "regularize_param",self.regularize,
-              "objective",objective,
-              "unlabeled loss:",unlabeled_loss,
+            #   "regularize_val",regularize_val,
+            #   "regularize_param",self.regularize,
+            #   "objective",objective,
+            #   "unlabeled loss:",unlabeled_loss,
               "accuracy:",accuracy,
-              "entropy:",entropy,
-              "kl_uniform:",kl_uniform,
-              "kl_class_prior:",kl_class_prior,
-              "true unlabeled loss:",true_loss,
-              "true accuracy:",true_accuracy,
-              "validation_accuracy:",validation_accuracy,
-              "clamp_c:",clamp_c,
-              "clamp_a:",clamp_a,
-              "clamp_d:",clamp_d,
-              "signaltonoise:",signaltonoise,
-              "entropy_sd:",entropy_sd)
-        if self.model != 'att':
-            print("=== ",
-                  "weights:", weights_sparse_tensor_value.values[:10],
-                  "weights_unnormalized:", weights_unnormalized_sparse_tensor_value.values[:10])
+            #   "entropy:",entropy,
+            #   "kl_uniform:",kl_uniform,
+            #   "kl_class_prior:",kl_class_prior,
+            #   "true unlabeled loss:",true_loss,
+            #   "true accuracy:",true_accuracy,
+            #   "validation_accuracy:",validation_accuracy,
+            #   "clamp_c:",clamp_c,
+            #   "clamp_a:",clamp_a,
+            #   "clamp_d:",clamp_d,
+            #   "signaltonoise:",signaltonoise,
+            #   "entropy_sd:",entropy_sd
+              )
+        # if self.model != 'att':
+        #     print("=== ",
+        #           "weights:", weights_sparse_tensor_value.values[:10],
+        #           "weights_unnormalized:", weights_unnormalized_sparse_tensor_value.values[:10])
 
-        else:
-            print("=== ",
-                  "thetas:", thetas,
-                  "theta_times:", theta_times,
-                  "self_weight:",self_weight)
-                  # "node_features:", node_features,
-                  # "t:",t,
-                  # "neg_t:",neg_t,
-                  # "entropy:",entropy,
-                  # "avg_neigh:",avg_neigh,
-                  # "max_neigh:",max_neigh,
+        # else:
+        #     print("=== ",
+        #           "thetas:", thetas,
+        #           "theta_times:", theta_times,
+        #           "self_weight:",self_weight)
+        #           # "node_features:", node_features,
+        #           # "t:",t,
+        #           # "neg_t:",neg_t,
+        #           # "entropy:",entropy,
+        #           # "avg_neigh:",avg_neigh,
+        #           # "max_neigh:",max_neigh,
         sys.stdout.flush()
 
         with open("as.csv", "a") as fp:

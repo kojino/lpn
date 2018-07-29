@@ -18,8 +18,8 @@ class DeepLP_Edge(DeepLP_WRBF):
         b_np = self._eval(self.b)
         self.thetas.append(theta_np)
         self.bs.append(b_np)
-        print("== theta_edge:", theta_np)
-        print("== b:", b_np)
+        # print("== theta_edge:", theta_np)
+        # print("== b:", b_np)
         super()._save_params(epoch, data)
         with open("thetas.csv", "a") as fp:
             wr = csv.writer(fp, dialect='excel')
