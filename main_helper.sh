@@ -1,15 +1,11 @@
 #!/bin/bash
 #SBATCH -o val2.%j.txt
 #SBATCH -e val2.%j.err
-#SBATCH -t 06:50
+#SBATCH -t 5-05:01:00
 #SBATCH --mem 3999
-#SBATCH -J main
-#SBATCH -p seas_dgx1 
-#SBATCH --gres=gpu -n 4
-
-# module load cuda/9.0-fasrc02 cudnn/7.0_cuda9.0-fasrc01
-# module load Anaconda3/5.0.1-fasrc01
-# source activate tf1.8_cuda9
+#SBATCH -J edge_master
+#SBATCH -p shared
+#SBATCH --reservation=kojinrebuttal
 
 python -m deeplp.main \
 --change_b $1 \
