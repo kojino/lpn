@@ -249,7 +249,7 @@ class DeepLP:
         start_time = time.time()
         l_o_loss       = self._calc_loss(y,yhat,masked)
         # l_o_loss = tf.constant(0.0)
-        regularize_val = self._regularize_loss(regularize_theta,regularize_weight)
+        regularize_val = self._regularize_loss(float(regularize_theta),regularize_weight)
         objective      = l_o_loss + regularize_val
         optimizer = tf.train.AdamOptimizer(lr)
         update = tf.contrib.slim.learning.create_train_op(objective, optimizer,summarize_gradients=True)
