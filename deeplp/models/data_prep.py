@@ -91,7 +91,7 @@ def load_data(data,datatype,directed=0,confidence=False,model='edge'):
                 edge_features = node_features_np_to_dense(edge_features)
             else:
                 if confidence == 'raw':
-                    edge_features = np.loadtxt(data_path+'/features_raw_reduced.csv',delimiter=',')
+                    edge_features = np.loadtxt(data_path+'/features_node_only.csv',delimiter=',')
                 elif confidence == 'raw_reduced':
                     edge_features = np.loadtxt(data_path+'/features_raw.csv',delimiter=',')
                 else:
