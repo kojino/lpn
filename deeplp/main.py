@@ -164,19 +164,19 @@ def main(args):
     #         args.num_iter = 20
     #         args.num_epoch = 2000
 
-    d = {
-        0:-12,
-        1:-6,
-        2:-8,
-        3:-6,
-        4:-4,
-        5:-12,
-        6:4,
-        7:-14,
-        8:-30,
-        9:-10
-    }
-    args.regularize_theta = d[args.split_seed]
+    # d = {
+    #     0:-12,
+    #     1:-6,
+    #     2:-8,
+    #     3:-6,
+    #     4:-4,
+    #     5:-12,
+    #     6:4,
+    #     7:-14,
+    #     8:-30,
+    #     9:-10
+    # }
+    # args.regularize_theta = d[args.split_seed]
 
 
     if args.crossval_k != 1:

@@ -5,7 +5,6 @@
 #SBATCH --mem 3999
 #SBATCH -J edge_master
 #SBATCH -p shared
-#SBATCH --reservation=kojinrebuttal
 
 change_bs=(0)
 clamps=(3)
