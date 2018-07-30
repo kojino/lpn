@@ -7,7 +7,7 @@
 #SBATCH -J crossval1
 #SBATCH --reservation=koshiba
 
-datas=('cora' 'citeseer' 'pubmed')
+datas=('cora')
 split_seeds=(0 1 2 3 4 5 6 7 8 9)
 unlabel_probs=(0.99)
 for data in ${datas[@]}
