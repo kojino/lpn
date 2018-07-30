@@ -182,8 +182,8 @@ class DeepLP:
         self.true_accuracies = []
         self.validation_accuracies = []
         self.objectives = []
-        self.micro_f1s = []
-        self.macro_f1s = []
+        self.as_ = []
+        self.bs_ = []
         self.regularize_vals = []
         self._save(-1,train_data,validation_data)
         self.y_np = self._eval(self.y, validation_data)
@@ -654,8 +654,8 @@ class DeepLP:
         self.validation_accuracies.append(validation_accuracy)
         self.objectives.append(objective)
         self.entropies.append(entropy)
-        self.micro_f1s.append(micro_f1)
-        self.macro_f1s.append(macro_f1)
+        self.as_.append(clamp_a)
+        self.bs_.append(clamp_c)
         self.regularize_vals.append(regularize_val)
 
         with open(f'accs/{self.log_name}_accs.csv', 'a') as csvfile:

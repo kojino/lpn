@@ -303,8 +303,8 @@ def main(args):
                              trained_model.unlabeled_losses[index],
                              trained_model.true_accuracies[index],
                              trained_model.entropies[index],
-                             trained_model.micro_f1s[index],
-                             trained_model.macro_f1s[index],
+                             trained_model.as_[index],
+                             trained_model.bs_[index],
                              trained_model.regularize_vals[index])
 
     else:

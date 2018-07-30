@@ -5,6 +5,7 @@
 #SBATCH --mem 3999
 #SBATCH -J edge_master
 #SBATCH -p shared
+#SBATCH --reservation=kojinrebuttal
 
 change_bs=(0)
 clamps=(1)
@@ -19,7 +20,7 @@ loss_class_masss=(1)
 lrs=(0.01)
 models=('edge')
 num_epochs=(5000)
-num_iters=(20)
+num_iters=(10 20 30 40 50 60 70 80 90 100)
 num_sampless=(100)
 parameter_seeds=(0)
 regularizes=(-30)
