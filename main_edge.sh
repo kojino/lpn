@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH -o val1.%j.txt
 #SBATCH -e val1.%j.err
-#SBATCH -t 06:50:50
+#SBATCH -t 06:50
 #SBATCH --mem 3999
 #SBATCH -J edge_master
 #SBATCH -p shared

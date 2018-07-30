@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH -o val2.%j.txt
 #SBATCH -e val2.%j.err
-#SBATCH -t 7-00:00:00
+#SBATCH -t 06:50
 #SBATCH --mem 3999
 #SBATCH -J main
 #SBATCH -p shared
