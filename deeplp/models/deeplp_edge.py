@@ -17,7 +17,7 @@ class DeepLP_Edge(DeepLP_WRBF):
         theta_np = self._eval(self.theta)
         b_np = self._eval(self.b)
         self.thetas.append(theta_np)
-        self.bs.append(b_np)
+        self.bs.append(b_np) 
         # print("== theta_edge:", theta_np)
         # print("== b:", b_np)
         super()._save_params(epoch, data)

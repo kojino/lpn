@@ -678,8 +678,8 @@ class DeepLP:
             #   "true unlabeled loss:",true_loss,
             #   "true accuracy:",true_accuracy,
             #   "validation_accuracy:",validation_accuracy,
-            #   "clamp_c:",clamp_c,
-            #   "clamp_a:",clamp_a,
+              "clamp_c:",clamp_c,
+              "clamp_a:",clamp_a,
             #   "clamp_d:",clamp_d,
             #   "signaltonoise:",signaltonoise,
             #   "entropy_sd:",entropy_sd

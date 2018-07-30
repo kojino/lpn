@@ -8,7 +8,7 @@
 #SBATCH --gres=gpu -n 4
 
 change_bs=(0)
-clamps=(1)
+clamps=(3)
 crossval_ks=(1)
 datas=('cora')
 # datas=('pubmed')
