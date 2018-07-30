@@ -4,8 +4,12 @@
 #SBATCH -t 06:50
 #SBATCH --mem 3999
 #SBATCH -J main
-#SBATCH -p shared
-#SBATCH --reservation=kojinrebuttal
+#SBATCH -p seas_dgx1 
+#SBATCH --gres=gpu -n 4
+
+# module load cuda/9.0-fasrc02 cudnn/7.0_cuda9.0-fasrc01
+# module load Anaconda3/5.0.1-fasrc01
+# source activate tf1.8_cuda9
 
 python -m deeplp.main \
 --change_b $1 \

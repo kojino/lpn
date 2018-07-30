@@ -1,11 +1,11 @@
 #!/bin/bash
 #SBATCH -o val1.%j.txt
 #SBATCH -e val1.%j.err
-#SBATCH -t 06:50
+#SBATCH -t 1000
 #SBATCH --mem 3999
 #SBATCH -J edge_master
-#SBATCH -p shared
-#SBATCH --reservation=kojinrebuttal
+#SBATCH -p seas_dgx1 
+#SBATCH --gres=gpu -n 4
 
 change_bs=(0)
 clamps=(1)
@@ -19,7 +19,7 @@ losss=('log')
 loss_class_masss=(1)
 lrs=(0.01)
 models=('edge')
-num_epochs=(1000)
+num_epochs=(5000)
 num_iters=(100 90 80 70 60 50 40 30 20 10)
 num_sampless=(100)
 parameter_seeds=(0)
