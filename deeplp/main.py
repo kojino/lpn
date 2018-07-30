@@ -136,33 +136,33 @@ def build_and_train_model(args,
 
 
 def main(args):
-    if args.datatype == 'flip':
-        if args.data == 'cora':
-            args.num_iter = 20
-            args.num_epoch = 5000
-        elif args.data == 'dblp':
-            args.num_iter = 20
-            args.num_epoch = 1200
-        elif args.data == 'flickr':
-            args.num_iter = 10
-            args.num_epoch = 500
-        elif args.data == 'imdb':
-            args.num_iter = 10
-            args.num_epoch = 10000
-        elif args.data == 'industry':
-            args.num_iter = 10
-            args.num_epoch = 10000
+    # if args.datatype == 'flip':
+    #     if args.data == 'cora':
+    #         args.num_iter = 20
+    #         args.num_epoch = 5000
+    #     elif args.data == 'dblp':
+    #         args.num_iter = 20
+    #         args.num_epoch = 1200
+    #     elif args.data == 'flickr':
+    #         args.num_iter = 10
+    #         args.num_epoch = 500
+    #     elif args.data == 'imdb':
+    #         args.num_iter = 10
+    #         args.num_epoch = 10000
+    #     elif args.data == 'industry':
+    #         args.num_iter = 10
+    #         args.num_epoch = 10000
 
-    if args.datatype == 'linqs':
-        if args.data == 'cora':
-            args.num_iter = 20
-            args.num_epoch = 5000
-        elif args.data == 'citeseer':
-            args.num_iter = 50
-            args.num_epoch = 5000
-        elif args.data == 'pubmed':
-            args.num_iter = 20
-            args.num_epoch = 2000
+    # if args.datatype == 'linqs':
+    #     if args.data == 'cora':
+    #         args.num_iter = 20
+    #         args.num_epoch = 1
+    #     elif args.data == 'citeseer':
+    #         args.num_iter = 50
+    #         args.num_epoch = 5000
+    #     elif args.data == 'pubmed':
+    #         args.num_iter = 20
+    #         args.num_epoch = 2000
 
     d = {
         0:-12,
