@@ -91,6 +91,7 @@ def build_and_train_model(args,
                                    clamp_scale=args.clamp_scale)
 
     elif args.model == 'edge':
+        print(args.regularize_theta)
         trained_model = DeepLP_Edge(args.profile,
                                     'edge',
                                     log_name,
@@ -175,7 +176,8 @@ def main(args):
         8:-30,
         9:-10
     }
-    args.regularize = d[args.split_seed]
+    args.regularize_theta = d[args.split_seed]
+
 
     if args.crossval_k != 1:
         args.num_epoch = int(args.num_epoch / args.crossval_k)
