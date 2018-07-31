@@ -5,10 +5,11 @@
 #SBATCH --mem 3999
 #SBATCH -J edge_master
 #SBATCH -p shared
+#SBATCH --reservation=kojinrebuttal
 
 change_bs=(0)
 clamps=(3)
-crossval_ks=(1 5)
+crossval_ks=(1)
 datas=('cora')
 # datas=('pubmed')
 has_featuress=(0)

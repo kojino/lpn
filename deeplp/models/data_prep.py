@@ -91,7 +91,7 @@ def load_data(data,datatype,directed=0,confidence=False,model='edge'):
                 edge_features = node_features_np_to_dense(edge_features)
             else:
                 if confidence == 'raw':
-                    edge_features = np.loadtxt(data_path+'/features_node_only.csv',delimiter=',')
+                    edge_features = np.loadtxt(data_path+'/features_random.csv',delimiter=',')
                     print("=======================================================")
                 elif confidence == 'raw_reduced':
                     edge_features = np.loadtxt(data_path+'/features_raw.csv',delimiter=',')
@@ -110,6 +110,7 @@ def load_data(data,datatype,directed=0,confidence=False,model='edge'):
         node_features = np.loadtxt(data_path+'/Ndir.csv',delimiter=',')
     else:
         node_features = []
+    print(node_features.shape)
 
     print("Loading graph...")
     graph = np.loadtxt(data_path+'/Gsym.csv',delimiter=',')

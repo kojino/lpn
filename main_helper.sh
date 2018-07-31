@@ -5,6 +5,8 @@
 #SBATCH --mem 3999
 #SBATCH -J edge_master
 #SBATCH -p shared
+#SBATCH --reservation=kojinrebuttal
+
 
 python -m deeplp.main \
 --change_b $1 \
