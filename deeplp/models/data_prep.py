@@ -193,9 +193,9 @@ def prepare_data(labels,
         # hence, sample with replacement
         for i in range(num_samples):
             indices_to_mask = np.random.permutation(labeled_indices)[:leave_k]
-            X[index_to_mask,i,:] = 1/num_classes
-            labeled[index_to_mask,i,:] = 0
-            masked[index_to_mask,i,:] = 1
+            X[indices_to_mask,i,:] = 1/num_classes
+            labeled[indices_to_mask,i,:] = 0
+            masked[indices_to_mask,i,:] = 1
 
     # construct data used to train the model
     train_data = {

@@ -297,7 +297,7 @@ def main(args):
                             ('++min_leave_k_loss',np.argmin(trained_model.leave_k_out_losses)),
                             ('++max_accuracy',np.argmax(trained_model.accuracies)),
                             ('++last',-1)]:
-            print(name,args.data,str(args.split_seed),str(args.regularize_theta),
+            print(name,args.data,str(args.split_seed),str(args.regularize_theta),str(args.unlabel_prob),str(args.leave_k),
                              trained_model.leave_k_out_losses[index],
                              trained_model.objectives[index],
                              trained_model.unlabeled_losses[index],
