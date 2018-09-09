@@ -6,126 +6,74 @@
 #SBATCH -J edge_master
 #SBATCH -p shared
 
-change_bs=(0)
-clamps=(3)
+batch_sizes=(130 50 10)
+bifurcations=(0.001)
 crossval_ks=(1)
-datas=('cora')
-# datas=('pubmed')
-has_featuress=(0)
-leave_ks=(1 2 5)
-logistics=(0)
-losss=('log')
-loss_class_masss=(1)
-lrs=(0.01)
+datas=('linqs_cora')
+decays=(0 10 100)
+feature_types=('all')
+lamdas=(-14 -12 -10 -8 -6 -4 -2 0)
+leave_ks=(1)
+log='DEBUG'
+lrs=(0.1 0.01)
 models=('edge')
-num_epochs=(1)
-num_iters=(30)
-num_sampless=(100)
-parameter_seeds=(0)
-regularizes=(-14 -12 -10 -8 -6 -4 -2 0 2)
-regularize_types=('l2')
-split_seeds=(0 1 2 3 4)
-asymmetrics=(1)
-unlabel_probs=(0.9 0.92 0.94 0.96 0.98 0.99)
-weight_normalizations=('softmax')
-confidences=(0)
-datatypes=('linqs')
-profiles=(0)
-sparse_edgess=(0)
-regularize_weights=(-14)
-clamp_scales=(0.01)
+num_epochs=(3000)
+num_layerss=(30)
+num_sampless=(1000)
+save_params=1
+split_seeds=(0 1 2 3 4 5)
+unlabel_probs=(0.90 0.95 0.99)
+weighted_loss=1
 
-for num_iter in ${num_iters[@]}
-do
-for crossval_k in ${crossval_ks[@]}
-do
 for model in ${models[@]}
 do
 for data in ${datas[@]}
 do
-for asymmetric in ${asymmetrics[@]}
+for feature_type in ${feature_types[@]}
+do
+for crossval_k in ${crossval_ks[@]}
 do
 for unlabel_prob in ${unlabel_probs[@]}
+do
+for num_layers in ${num_layerss[@]}
+do
+for split_seed in ${split_seeds[@]}
+do
+for num_epoch in ${num_epochs[@]}
 do
 for leave_k in ${leave_ks[@]}
 do
 for lr in ${lrs[@]}
 do
-for clamp_scale in ${clamp_scales[@]}
+for decay in ${decays[@]}
 do
-for split_seed in ${split_seeds[@]}
+for batch_size in ${batch_sizes[@]}
 do
-for parameter_seed in ${parameter_seeds[@]}
+for lamda in ${lamdas[@]}
 do
-for regularize_type in ${regularize_types[@]}
-do
-for regularize in ${regularizes[@]}
-do
-
-for has_features in ${has_featuress[@]}
-do
-for change_b in ${change_bs[@]}
-do
-for clamp in ${clamps[@]}
-do
-for num_epoch in ${num_epochs[@]}
+for bifurcation in ${bifurcations[@]}
 do
 for num_samples in ${num_sampless[@]}
 do
-for logistic in ${logistics[@]}
-do
-for loss_class_mass in ${loss_class_masss[@]}
-do
-for weight_normalization in ${weight_normalizations[@]}
-do
-for confidence in ${confidences[@]}
-do
-for datatype in ${datatypes[@]}
-do
-for profile in ${profiles[@]}
-do
-for sparse_edges in ${sparse_edgess[@]}
-do
-for regularize_weight in ${regularize_weights[@]}
-do
 ./main_helper.sh \
-$change_b \
-$clamp \
+$batch_size \
+$bifurcation \
 $crossval_k \
 $data \
-$has_features \
+$decay \
+$feature_type \
+$lamda \
 $leave_k \
-$logistic \
-$loss_class_mass \
+$log \
 $lr \
 $model \
 $num_epoch \
-$num_iter \
+$num_layers \
 $num_samples \
-$parameter_seed \
-$regularize \
-$regularize_type \
+$save_params \
 $split_seed \
-$asymmetric \
 $unlabel_prob \
-$weight_normalization \
-$confidence \
-$datatype \
-$profile \
-$sparse_edges \
-$regularize_weight \
-$clamp_scale
-
-done
-done
-done
-done
-done
-done
-done
-done
-done
-done
+$weighted_loss 
 done
 done
 done

@@ -1,86 +1,45 @@
-from __future__ import print_function
-import tensorflow as tf
 import numpy as np
-import networkx as nx
-import csv
-from deeplp.models.deeplp_wrbf import DeepLP_WRBF
-from sklearn.metrics.pairwise import paired_distances, pairwise_distances
-from scipy.spatial.distance import braycurtis, canberra, chebyshev, cityblock, correlation, cosine, euclidean, jaccard, mahalanobis, minkowski
+import tensorflow as tf
+
+from deeplp.models.deeplp import DeepLP
+from deeplp.utils import sparse_tensor_dense_tensordot
 
 
-class DeepLP_Edge(DeepLP_WRBF):
+class DeepLP_Edge(DeepLP):
     """
-    Deep label propagation with distance metrics.
+    Feature based model for graph data with features.
     """
 
-    def _save_params(self, epoch, data):
-        theta_np = self._eval(self.theta)
-        b_np = self._eval(self.b)
-        self.thetas.append(theta_np)
-        self.bs.append(b_np) 
-        # print("== theta_edge:", theta_np)
-        # print("== b:", b_np)
-        super()._save_params(epoch, data)
-        with open(f'accs/{self.log_name}_thetas.csv', 'a') as csvfile:
-            wr = csv.writer(csvfile, dialect='excel')
-            wr.writerow(theta_np[0])
-
-    def train(self, data, full_data, epochs):
-        self.thetas = []
-        self.bs = []
-        super().train(data, full_data, epochs)
-
-    def smooth_relu(self, X):
-        return tf.exp(X) * tf.cast(tf.greater(-X,0),tf.float32) \
-             + (X + 1) * tf.cast(tf.greater(X,0),tf.float32)
-
-    def _init_weights(self, features, graph, seed):
-        """Initialize weights
-        Create a sparse weight tensor from graph and features.
-        Theta (weights of RBF kernel) is the tf variable.
-        Arguments:
-            features: features for ecah node
-            graph: adjacency matrix of the nodes
-            seed: seed to be used for random initialization of parameters
-        Returns:
-            weights in tf variable
+    def _propagate(self, j, h):
         """
+        Propagate labels similarly to standard LP.
+        """
+        return sparse_tensor_dense_tensordot(self.weights, h, axes=1)
 
-        num_features = features.shape[1]
-        print(num_features)
-        num_edges = features.shape[0]
-        num_nodes = graph.shape[0]
-        features = tf.constant(features, dtype=tf.float32)
+    def _summary(self):
+        super()._summary()
+        tf.summary.histogram("theta", self.theta)
+        tf.summary.histogram("weights", self.weights.values)
 
-        if seed == 0:
-            theta = np.zeros((1, num_features))
-            # theta = np.array([])
-        else:
-            np.random.seed(seed)
-            theta = np.random.normal(
-                loc=0.0, scale=4.0, size=(1, num_features))
+    def _init_weights(self):
+        self.theta = tf.Variable(
+            np.zeros((1, self.num_features)), dtype=tf.float32)
 
-        self.theta = tf.Variable(theta, dtype=tf.float32)
-        #
-        # if self.weight_normalization == 'smooth_relu':
-        #     self.b     = tf.Variable(1, dtype=tf.float32)
-        #     self.values = tf.reduce_sum(features * self.theta + self.b,axis=1)
-        #     indices = tf.constant(list(zip(graph.tocoo().row,graph.tocoo().col)), dtype=tf.int64)
-        #     self.weights_unnormalized = tf.SparseTensor(indices, self.smooth_relu(self.values), [num_nodes, num_nodes])
-        #     weights = self._normalize_weights(self.weights_unnormalized)
+        features_tf = tf.constant(self.features, dtype=tf.float32)
+        values = tf.reduce_sum(features_tf * self.theta, axis=1) + 1
+        nonzero_where = tf.squeeze(tf.where(tf.not_equal(values, 0)))
+        nonzero_values = tf.gather(values, nonzero_where)
+        indices_tf = tf.constant(self.indices, dtype=tf.int64)
+        nonzero_indices = tf.gather(indices_tf, nonzero_where, axis=0)
 
-        self.b = tf.constant(1, dtype=tf.float32)
-        self.values = tf.reduce_sum(features * self.theta, axis=1) + self.b
-        indices = tf.constant(
-            list(zip(graph.tocoo().row,
-                     graph.tocoo().col)), dtype=tf.int64)
-
-        self.nonzero_where = tf.squeeze(tf.where(tf.not_equal(self.values, 0)))
-        self.nonzero_values = tf.gather(self.values, self.nonzero_where)
-        nonzero_indices = tf.gather(indices, self.nonzero_where, axis=0)
-
-        self.weights_unnormalized = tf.SparseTensor(
-            nonzero_indices, self.nonzero_values, [num_nodes, num_nodes])
-        weights = tf.sparse_softmax(self.weights_unnormalized)
+        weights_unnormalized = tf.SparseTensor(
+            nonzero_indices, nonzero_values, [self.num_nodes, self.num_nodes])
+        weights = tf.sparse_softmax(weights_unnormalized)
 
         return weights
+
+    def _regularize_loss(self):
+        regularizer = tf.contrib.layers.l2_regularizer(scale=self.lamda)
+        theta_penalty = tf.contrib.layers.apply_regularization(
+            regularizer, [self.theta])
+        return theta_penalty

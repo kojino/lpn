@@ -1,5 +1,0 @@
-python -m deepwalk.__main__ --input flip/Wdir_adj_industry.adjlist --max-memory-data-size 0 --number-walks 80 --representation-size 128 --walk-length 40 --window-size 10 --workers 1 --output flip/embed_deepwalk_industry.txt
-python -m deepwalk.__main__ --input flip/Wdir_adj_cora.adjlist --max-memory-data-size 0 --number-walks 80 --representation-size 128 --walk-length 40 --window-size 10 --workers 1 --output flip/embed_deepwalk_cora.txt
-python -m deepwalk.__main__ --input flip/Wdir_adj_imdb.adjlist --max-memory-data-size 0 --number-walks 80 --representation-size 128 --walk-length 40 --window-size 10 --workers 1 --output flip/embed_deepwalk_imdb.txt
-python -m deepwalk.__main__ --input flip/Wdir_adj_dblp.adjlist --max-memory-data-size 0 --number-walks 80 --representation-size 128 --walk-length 40 --window-size 10 --workers 1 --output flip/embed_deepwalk_dblp.txt
-python -m deepwalk.__main__ --input flip/Wdir_adj_flickr.adjlist --max-memory-data-size 0 --number-walks 80 --representation-size 128 --walk-length 40 --window-size 10 --workers 1 --output flip/embed_deepwalk_flickr.txt

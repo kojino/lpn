@@ -1,8 +1,9 @@
 import numpy as np
 import scipy as sp
-from deeplp.models.utils import rbf_kernel
+from deeplp.utils import rbf_kernel
 from sklearn.preprocessing import normalize
 from sklearn.utils.extmath import softmax
+
 
 class LP:
     """
@@ -11,10 +12,7 @@ class LP:
     See mlg.eng.cam.ac.uk/zoubin/papers/CMU-CALD-02-107.pdf for details.
     """
 
-    def closed(self, labels,
-                     weights,
-                     labeled_indices,
-                     unlabeled_indices):
+    def closed(self, labels, weights, labeled_indices, unlabeled_indices):
         """Closed solution of label propagation
         Input:
             labels: one-hot encoded labels
@@ -27,18 +25,15 @@ class LP:
         # normalize T
         Tnorm = self._tnorm(weights)
         # sort Tnorm by unlabeled/labeld
-        Tuu_norm = Tnorm[np.ix_(unlabeled_indices,unlabeled_indices)]
-        Tul_norm = Tnorm[np.ix_(unlabeled_indices,labeled_indices)]
+        Tuu_norm = Tnorm[np.ix_(unlabeled_indices, unlabeled_indices)]
+        Tul_norm = Tnorm[np.ix_(unlabeled_indices, labeled_indices)]
         # closed form prediction for unlabeled nodes
-        lapliacian = (np.identity(len(Tuu_norm))-Tuu_norm)
+        lapliacian = (np.identity(len(Tuu_norm)) - Tuu_norm)
         propagated = Tul_norm @ labels[labeled_indices]
         label_predictions = np.linalg.solve(lapliacian, propagated)
         return label_predictions
 
-    def closed_sp(self, labels,
-                        weights,
-                        labeled_indices,
-                        unlabeled_indices):
+    def closed_sp(self, labels, weights, labeled_indices, unlabeled_indices):
         """Closed solution of label propagation
         Input:
             labels: one-hot encoded labels
@@ -51,8 +46,8 @@ class LP:
         # normalize T
         Tnorm = normalize(weights, norm='l1', axis=1)
         # sort Tnorm by unlabeled/labeld
-        Tuu_norm = Tnorm[np.ix_(unlabeled_indices,unlabeled_indices)]
-        Tul_norm = Tnorm[np.ix_(unlabeled_indices,labeled_indices)]
+        Tuu_norm = Tnorm[np.ix_(unlabeled_indices, unlabeled_indices)]
+        Tul_norm = Tnorm[np.ix_(unlabeled_indices, labeled_indices)]
 
         # closed form prediction for unlabeled nodes
         lapliacian = sp.sparse.identity(Tuu_norm.shape[0]) - Tuu_norm
@@ -60,13 +55,15 @@ class LP:
         label_predictions = sp.sparse.linalg.spsolve(lapliacian, propagated)
         return label_predictions
 
-    def iter(self, labels, # input labels
-                   weights,
-                   is_labeled,
-                   num_iter,
-                   unlabeled_indices,
-                   clamp=0,
-                   laplacian=0):
+    def iter(
+            self,
+            labels,  # input labels
+            weights,
+            is_labeled,
+            num_iter,
+            unlabeled_indices,
+            clamp=0,
+            laplacian=0):
         """Iterated solution of label propagation.
         Input:
             weights: weight adjacency matrix
@@ -82,7 +79,7 @@ class LP:
         h = labels.copy()
 
         D = np.zeros(weights.shape)
-        np.fill_diagonal(D, np.sum(np.abs(weights),axis=0,keepdims=True))
+        np.fill_diagonal(D, np.sum(np.abs(weights), axis=0, keepdims=True))
         Dinv = np.linalg.inv(D)
 
         if laplacian:
@@ -94,9 +91,9 @@ class LP:
                 # propagate labels
                 h = Tnorm @ h
                 # don't update labeled nodes
-                h = h * (1-is_labeled) + labels * is_labeled
+                h = h * (1 - is_labeled) + labels * is_labeled
             else:
-                h = (1-laplacian) * A @ h + laplacian * labels
+                h = (1 - laplacian) * A @ h + laplacian * labels
 
             if clamp:
                 h = softmax(clamp * h)
@@ -104,14 +101,15 @@ class LP:
         # only return label predictions
         return h[unlabeled_indices]
 
-
-    def iter_sp(self, labels, # input labels
-                   weights,
-                   is_labeled,
-                   num_iter,
-                   unlabeled_indices,
-                   clamp=0,
-                   laplacian=0):
+    def iter_sp(
+            self,
+            labels,  # input labels
+            weights,
+            is_labeled,
+            num_iter,
+            unlabeled_indices,
+            clamp=0,
+            laplacian=0):
         """Iterated solution of label propagation.
         Input:
             weights: weight adjacency matrix
@@ -123,13 +121,14 @@ class LP:
         """
         # normalize T
         Tnorm = normalize(weights, norm='l1', axis=1)
-        vals=Tnorm.tocoo().data
+        vals = Tnorm.tocoo().data
         h = labels.copy()
 
         if laplacian:
-            diagonals = np.sum(np.abs(weights),axis=1).T
+            diagonals = np.sum(np.abs(weights), axis=1).T
             offset = [0]
-            D = sp.sparse.diags([np.array(np.abs(weights).sum(axis=1).T)[0]], [0])
+            D = sp.sparse.diags(
+                [np.array(np.abs(weights).sum(axis=1).T)[0]], [0])
             Dinv = sp.sparse.linalg.inv(D.tocsc())
 
             Dinv_sqrt = np.sqrt(Dinv)
@@ -140,9 +139,9 @@ class LP:
                 # propagate labels
                 h = Tnorm @ h
                 # don't update labeled nodes
-                h = h * (1-is_labeled) + labels * is_labeled
+                h = h * (1 - is_labeled) + labels * is_labeled
             else:
-                h = (1-laplacian) * A @ h + laplacian * labels
+                h = (1 - laplacian) * A @ h + laplacian * labels
 
             if clamp:
                 h = softmax(clamp * h)
@@ -150,8 +149,7 @@ class LP:
         # only return label predictions
         return h[unlabeled_indices]
 
-
-    def _tnorm(self,weights):
+    def _tnorm(self, weights):
         """Column normalize weights"""
         # row normalize T
         Tnorm = weights / np.sum(weights, axis=1, keepdims=True)
