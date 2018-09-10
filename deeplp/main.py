@@ -159,6 +159,7 @@ def main(args):
         accs = []
         losses = []
         objectives = []
+        valaccs = []
 
         for epoch in range(args.num_epoch):
             if args.batch_size > num_samples:
@@ -172,7 +173,7 @@ def main(args):
                     batch_data[key] = train_data[key][:,batch_indices,:]
                 else:
                     batch_data[key] = train_data[key]
-            _, summary, l_o_loss, objective = sess.run(
+            _, summary, l_o_loss, objective, validation_accuracy = sess.run(
                 [model.opt_op, model.summary_op, model.l_o_loss, model.objective, model.validation_accuracy], feed_dict=batch_data)
             loss, accuracy = sess.run(
                 [model.loss, model.accuracy], feed_dict=validation_data)
@@ -190,6 +191,7 @@ def main(args):
                 accs.append(accuracy)
                 losses.append(loss)
                 objectives.append(objective)
+                valaccs.append(validation_accuracy)
             writer.add_summary(summary, global_step=epoch)
             if epoch != 0 and (epoch + 1) % 10 == 0:
                 logger.info('saving checkpoint')
@@ -197,7 +199,7 @@ def main(args):
                 if args.save_params:
                     if args.model == 'edge':
                         np.savetxt(f'params/theta/theta_{exp_name}.csv', np.array(thetas),delimiter=',',fmt="%.6f")                    
-                    np.savetxt(f'params/summary/summary_{exp_name}.csv', np.array([accs,losses,as_,bs_,objectives]).T,delimiter=',',fmt="%.6f")
+                    np.savetxt(f'params/summary/summary_{exp_name}.csv', np.array([accs,valaccs,losses,as_,bs_,objectives]).T,delimiter=',',fmt="%.6f")
         writer.close()
 
 
