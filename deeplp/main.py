@@ -173,7 +173,7 @@ def main(args):
                 else:
                     batch_data[key] = train_data[key]
             _, summary, l_o_loss, objective = sess.run(
-                [model.opt_op, model.summary_op, model.l_o_loss, model.objective], feed_dict=batch_data)
+                [model.opt_op, model.summary_op, model.l_o_loss, model.objective, model.validation_accuracy], feed_dict=batch_data)
             loss, accuracy = sess.run(
                 [model.loss, model.accuracy], feed_dict=validation_data)
             if math.isnan(loss) or math.isnan(l_o_loss):
