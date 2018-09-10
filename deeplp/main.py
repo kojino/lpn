@@ -54,7 +54,7 @@ def main(args):
     # change exp_name to include any varying parameters
     date = datetime.datetime.now()
     exp_name = (
-        f"deeplp_{args.batch_size}_{args.decay}_{args.lamda}_{args.lr}_{args.split_seed}_{args.unlabel_prob}_")
+        f"deeplp_{args.lamda}_{args.split_seed}_{args.num_layers}_")
 
     # create directory and file for saving log
     exp_dir = 'experiment_results/' + exp_name
