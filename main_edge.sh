@@ -4,7 +4,8 @@
 #SBATCH -t 05:01:00
 #SBATCH --mem 3999
 #SBATCH -J edge_master
-#SBATCH -p shared
+#SBATCH -p holyseasgpu
+#SBATCH --reservation=kojinsubmission
 
 batch_sizes=(100)
 bifurcations=(0.01)
