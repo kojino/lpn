@@ -41,18 +41,19 @@ def load_data(data_path, model='edge', feature_type='all'):
     For attention, must have features as well:
         x.csv: (feature1, feature2, ...)
     """
-
-    y_path = f'data/{data_path}/labels.csv'
-    G_path = f'data/{data_path}/graph_symmetric.csv'
+    os.path.realpath(__file__)
+    
+    y_path = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', f'data/{data_path}/labels.csv'))
+    G_path = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', f'data/{data_path}/graph_symmetric.csv'))
     if feature_type == 'all':
-        x_path = f'data/{data_path}/features.csv'
+        x_path = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', f'data/{data_path}/features.csv'))
     elif feature_type == 'raw_reduced':
-        x_path = f'data/{data_path}/features_raw_reduced.csv'
+        x_path = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', f'data/{data_path}/features_raw_reduced.csv'))
     else:
         if model == 'wrbf':
-            x_path = f'data/{data_path}/node_features.csv'
+            x_path = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', f'data/{data_path}/node_features.csv'))
         else:
-            x_path = f'data/{data_path}/features_raw.csv'
+            x_path = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', f'data/{data_path}/features_raw.csv'))
     assert os.path.isfile(y_path), "Label file labels.csv must exist."
     assert os.path.isfile(G_path), "Graph file graph_symmetric.csv must exist."
     if model == 'edge':

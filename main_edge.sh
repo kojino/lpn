@@ -7,19 +7,19 @@
 #SBATCH -p shared
 
 batch_sizes=(100)
-bifurcations=(0.001)
-crossval_ks=(1)
-datas=('linqs_cora')
+bifurcations=(0.01)
+crossval_ks=(1 5)
+datas=('flip_flickr' 'linqs_citeseer')
 decays=(0)
 feature_types=('all')
 lamdas=(-14 -12 -10 -8 -6 -4 -2 0 2)
 leave_ks=(1)
 log='DEBUG'
-lrs=(0.01)
-models=('edge')
-num_epochs=(3000)
-num_layerss=(100 90 80 70 60 50 40 30 20 10)
-num_sampless=(1000)
+lrs=(0.1)
+models=('att')
+num_epochs=(1000)
+num_layerss=(100)
+num_sampless=(100)
 save_params=1
 split_seeds=(0 1 2 3 4 5 6 7 8 9)
 unlabel_probs=(0.99)
