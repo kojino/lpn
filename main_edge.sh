@@ -7,8 +7,8 @@
 #SBATCH -p shared
 
 batch_sizes=(100)
-bifurcations=(0.01 0 0.01)
-crossval_ks=(5 1 5)
+bifurcations=(0 0.01)
+crossval_ks=(1 5)
 datas=('linqs_cora')
 decays=(0)
 feature_types=('all')
