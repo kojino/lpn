@@ -54,7 +54,7 @@ def main(args):
     # change exp_name to include any varying parameters
     date = datetime.datetime.now()
     exp_name = (
-        f"deeplp_{args.lamda}_{args.split_seed}_{args.num_layers}_")
+        f"deeplp_{args.bifurcation}_{args.lamda}_{args.split_seed}_{args.num_layers}_{args.crossval_k}")
 
     # create directory and file for saving log
     exp_dir = 'experiment_results/' + exp_name
@@ -91,7 +91,18 @@ def main(args):
             features = np.hstack([features, seed_features])
     _, num_features = features.shape
 
+    logger.info(f"Final num_features: {num_features}")
 
+    lp = LP()
+    unlabeled_pred = lp.iter_sp(labels,
+                            graph,
+                            is_labeled,
+                            args.num_layers,
+                            unlabeled_indices)
+    y_pred = np.argmax(unlabeled_pred,axis=1)
+    y_true = np.argmax(true_labels[unlabeled_indices],axis=1)
+    acc = np.mean(y_pred == y_true)  
+    logger.info(f"Baseline Acc: {acc}")
 
     final_accs = []
 
@@ -102,6 +113,7 @@ def main(args):
 
     if args.crossval_k == 1:
         cv_held_out_indices_list = [[]]
+    finalvalaccs = []
 
     for i, cv_held_out_indices in enumerate(cv_held_out_indices_list):
         logger.info(f"{i}th cross validation")
@@ -135,7 +147,7 @@ def main(args):
             decay=args.decay)
 
         train_data, validation_data, num_samples = prepare_data(model,
-            cv_labels, cv_is_labeled, cv_labeled_indices, None, true_labels,
+            cv_labels, cv_is_labeled, cv_labeled_indices, cv_held_out_indices, true_labels,
             args.leave_k, args.num_samples, args.split_seed)
 
         logger.info('Model built.')
@@ -160,6 +172,15 @@ def main(args):
         losses = []
         objectives = []
         valaccs = []
+        
+        l_o_loss, objective, validation_accuracy = sess.run(
+                [model.l_o_loss, model.objective, model.validation_accuracy], feed_dict=train_data)
+        loss, accuracy, validation_accuracy = sess.run(
+            [model.loss, model.accuracy, model.validation_accuracy], feed_dict=validation_data)
+        log_info = (f"Epoch: 0, L-k-Loss: {l_o_loss:.5f}, "
+                    f"Loss: {loss:.5f}, Acc: {accuracy:.5f}")
+        if args.crossval_k > 1:
+            log_info += f", Val Acc {validation_accuracy:.5f}" 
 
         for epoch in range(args.num_epoch):
             if args.batch_size > num_samples:
@@ -173,14 +194,17 @@ def main(args):
                     batch_data[key] = train_data[key][:,batch_indices,:]
                 else:
                     batch_data[key] = train_data[key]
-            _, summary, l_o_loss, objective, validation_accuracy = sess.run(
-                [model.opt_op, model.summary_op, model.l_o_loss, model.objective, model.validation_accuracy], feed_dict=batch_data)
-            loss, accuracy = sess.run(
-                [model.loss, model.accuracy], feed_dict=validation_data)
+            _, summary, l_o_loss, objective = sess.run(
+                [model.opt_op, model.summary_op, model.l_o_loss, model.objective], feed_dict=batch_data)
+            loss, accuracy, validation_accuracy = sess.run(
+                [model.loss, model.accuracy, model.validation_accuracy], feed_dict=validation_data)
             if math.isnan(loss) or math.isnan(l_o_loss):
                 break
-            logger.info(f"Epoch: {epoch}, L-k-Loss: "
-                        f"{l_o_loss:.5f}, Loss: {loss:.5f}, Accuracy: {accuracy:.5f}")
+            log_info = (f"Epoch: {epoch+1}, L-k-Loss: {l_o_loss:.5f}, "
+                        f"Loss: {loss:.5f}, Acc: {accuracy:.5f}")            
+            if args.crossval_k > 1:
+                log_info += f", Val Acc {validation_accuracy:.5f}" 
+            logger.info(log_info)
             if args.save_params:
                 a, b = sess.run([model.a, model.b])
                 if args.model == 'edge':
@@ -197,10 +221,15 @@ def main(args):
                 logger.info('saving checkpoint')
                 save_path = saver.save(sess, f"{ckpt_dir}/model.ckpt")
                 if args.save_params:
+                    summary = [accs,losses,as_,bs_,objectives]
+                    if args.crossval_k > 1:
+                        summary.append(valaccs)
                     if args.model == 'edge':
                         np.savetxt(f'params/theta/theta_{exp_name}.csv', np.array(thetas),delimiter=',',fmt="%.6f")                    
-                    np.savetxt(f'params/summary/summary_{exp_name}.csv', np.array([accs,valaccs,losses,as_,bs_,objectives]).T,delimiter=',',fmt="%.6f")
+                    np.savetxt(f'params/summary/summary_{exp_name}.csv', np.array(summary).T,delimiter=',',fmt="%.6f")
         writer.close()
+        finalvalaccs.append(validation_accuracy)
+    logger.info(f"Accuracies from Cross Validation: {finalvalaccs}")
 
 
 if __name__ == '__main__':

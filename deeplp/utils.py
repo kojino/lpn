@@ -21,14 +21,14 @@ logger = logging.getLogger("deeplp")
 EPS = 1e-10
 
 num_layers_dict = {
-    'linqs_citeseer': 50,
+    'linqs_citeseer': 90,
     'linqs_cora': 20,
     'linqs_pubmed': 20,
-    'flip_cora': 20,
-    'flip_dblp': 20,
+    'flip_cora': 10,
+    'flip_dblp': 30,
     'flip_flickr': 10,
-    'flip_imdb': 10,
-    'flip_industry': 10
+    'flip_imdb': 70,
+    'flip_industry': 40
 }
 
 
@@ -121,9 +121,9 @@ def prepare_data(model, labels, is_labeled, labeled_indices, held_out_indices,
         validation_labeled = np.repeat(validation_labeled, num_classes, axis=1)
         validation_labeled = validation_labeled.reshape((num_nodes, 1,
                                                          num_classes))
+        # np.max(validation_labeled,axis=2) * (np.sum(y,axis=2) == np.sum(y,axis=2)) / 
     else:
         validation_labeled = true_labeled
-
     # construct validation data
     validation_data = {
         model.X: labels.reshape(num_nodes, 1, num_classes),

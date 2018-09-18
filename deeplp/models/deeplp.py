@@ -102,7 +102,7 @@ class DeepLP:
         self.accuracy = self._accuracy(self.y, self.yhat,
                                        1 - self.true_labeled)
         self.validation_accuracy = self._accuracy(self.y, self.yhat,
-                                                  1 - self.validation_labeled)
+                                                  self.validation_labeled)
 
         tf.summary.scalar('loss', self.loss)
         tf.summary.scalar('leave_k_out_loss', self.l_o_loss)
