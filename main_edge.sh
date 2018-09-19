@@ -6,17 +6,18 @@
 #SBATCH -J edge_master
 #SBATCH -p shared
 
+
 batch_sizes=(100)
 bifurcations=(0 0.01)
 crossval_ks=(1 5)
-datas=('linqs_cora')
+datas=('flip_cora')
 decays=(0)
 feature_types=('all')
 lamdas=(-14 -12 -10 -8 -6 -4 -2 0 2)
 leave_ks=(1)
 log='DEBUG'
-lrs=(0.01)
-models=('edge')
+lrs=(0.1)
+models=('att')
 num_epochs=(1000)
 num_layerss=(10 20 30 40 50 60 70 80 90 100)
 num_sampless=(100)
