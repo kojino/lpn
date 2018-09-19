@@ -5,7 +5,7 @@
 #SBATCH --mem 3999
 #SBATCH -J edge_master
 #SBATCH -p shared
-
+#SBATCH --account=ysinger_group
 
 batch_sizes=(100)
 bifurcations=(0 0.01)

@@ -5,7 +5,7 @@
 #SBATCH --mem 3999
 #SBATCH -J edge_master
 #SBATCH -p serial_requeue,general,shared
-
+#SBATCH --account=ysinger_group
 
 python -m deeplp.main \
 --batch_size=${1} \
