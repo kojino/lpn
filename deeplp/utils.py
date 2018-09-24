@@ -281,13 +281,13 @@ def array_to_one_hot(vec, num_classes=None):
     return res
 
 
-def edge_np_to_csr(graph, values=False):
+def edge_np_to_csr(graph, vals=[]):
     """
     Convert np array with each row being (row_index,col_index,value)
     of a graph to a scipy csr matrix.
     """
     num_nodes = int(max(max(graph[:, 0]), max(graph[:, 1])) + 1)
-    if not values:
+    if len(vals) == 0:
         vals = np.ones(len(graph[:, 0]))
     csr = csr_matrix(
         (vals, (graph[:, 0], graph[:, 1])), shape=(num_nodes, num_nodes))
@@ -508,11 +508,14 @@ def sparse_tensor_dense_tensordot(sp_a, b, axes, name=None):
 
 
 def load_graph(data_path):
-    G_path = f'data/{data_path}/graph_directed.csv'
-    x_path = f'data/{data_path}/features_raw.csv'
-    assert os.path.isfile(
-        x_path), "Node feature file features_raw.csv must exist."
-    assert os.path.isfile(G_path), "Graph file graph_directed.csv must exist."
+    os.path.realpath(__file__)
+    
+    G_path = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', f'data/{data_path}/graph_symmetric.csv'))
+    x_path = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', f'data/{data_path}/features_raw.csv'))
+    assert os.path.isfile(G_path), "Graph file graph_symmetric.csv must exist."
+    graph = np.loadtxt(G_path, delimiter=',')
+    graph = edge_np_to_csr(graph)
+    logger.info(f"Loaded graph: {graph.shape}")
 
     node_features = np.loadtxt(x_path, delimiter=',')
     node_features = node_features_np_to_dense(node_features)
@@ -542,8 +545,10 @@ def lisify_links(preds):
     return np.array([val for _, _, val in preds])
 
 
-def rbf(x1, x2):
-    return np.exp(-1 * np.sum((x1 - x2)**2)) / (1 / x2.shape[0])
+def rbf(x1, x2, sigma=None):
+    if not sigma:
+        sigma = (1 / x2.shape[0])
+    return np.exp(-1 * np.sum((x1 - x2)**2)) / sigma
 
 
 def get_lowest_weight(row):

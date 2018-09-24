@@ -9,8 +9,8 @@
 
 batch_sizes=(100)
 bifurcations=(0 0.01)
-crossval_ks=(1 5)
-datas=('flip_cora')
+crossval_ks=(1)
+datas=('linqs_cora')
 decays=(0)
 feature_types=('all')
 lamdas=(-14 -12 -10 -8 -6 -4 -2 0 2)
