@@ -39,8 +39,7 @@ def main(args):
     if args.ckpt == "0":
         args.ckpt = 0
 
-    if not os.path.exists('accs'):
-        os.makedirs('accs')
+    os.makedirs('accs', exist_ok=True)
 
     try:
         args = parser.parse_args()
