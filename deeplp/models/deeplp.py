@@ -54,8 +54,10 @@ class DeepLP:
 
         # see bifurcate function for how these parameters are used
         if self.bifurcation != None:
-            self.a = self.bifurcation * tf.Variable(0, dtype=tf.float32)
-            self.b = self.bifurcation * tf.Variable(0, dtype=tf.float32)
+            self.a = self.bifurcation * tf.Variable(
+                0, dtype=tf.float32, name='bif_a')
+            self.b = self.bifurcation * tf.Variable(
+                0, dtype=tf.float32, name='bif_b')
 
         self.opt_op = self._build()
         self._summary()
@@ -79,7 +81,7 @@ class DeepLP:
             h = self._propagate(t, h)
             if self.bifurcation:
                 h = bifurcate(h, t)
-                h = h / tf.reduce_sum(h, axis=2, keepdims=True)
+                h = h / tf.reduce_sum(h + EPS, axis=2, keepdims=True)
             h = h * (1 - self.labeled) + self.X * self.labeled
             return h, t + 1.0
 

@@ -10,6 +10,7 @@ import math
 import networkx as nx
 import numpy as np
 import tensorflow as tf
+from tensorflow.python import debug as tf_debug
 
 from deeplp.models.deeplp_att import DeepLP_ATT
 from deeplp.models.deeplp_edge import DeepLP_Edge
@@ -53,7 +54,7 @@ def main(args):
     # change exp_name to include any varying parameters
     date = datetime.datetime.now()
     exp_name = (
-        f"deeplp_{args.bifurcation}_{args.lamda}_{args.split_seed}_{args.num_layers}_{args.crossval_k}")
+        f"deeplp_{args.bifurcation}_{args.lamda}_{args.split_seed}_{args.num_layers}_{args.lr}_{args.crossval_k}")
 
     # create directory and file for saving log
     exp_dir = 'experiment_results/' + exp_name
@@ -152,11 +153,14 @@ def main(args):
         logger.info('Model built.')
 
         sess = tf.Session()
+        # sess = tf_debug.LocalCLIDebugWrapperSession(sess)
+        # sess.add_tensor_filter("has_inf_or_nan", tf_debug.has_inf_or_nan)
         sess.run(tf.global_variables_initializer())
+        
 
         writer = tf.summary.FileWriter(f'log/{exp_name}', sess.graph)
         saver = tf.train.Saver()
-        ckpt_dir = f"ckpt/{exp_name}"
+        ckpt_dir = f"log/{exp_name}"
         os.makedirs(ckpt_dir, exist_ok=True)
         if args.ckpt:
             saver.restore(sess, f"{args.ckpt}/model.ckpt")
@@ -195,6 +199,7 @@ def main(args):
                     batch_data[key] = train_data[key]
             _, summary, l_o_loss, objective = sess.run(
                 [model.opt_op, model.summary_op, model.l_o_loss, model.objective], feed_dict=batch_data)
+            
             loss, accuracy, validation_accuracy = sess.run(
                 [model.loss, model.accuracy, model.validation_accuracy], feed_dict=validation_data)
             if math.isnan(loss) or math.isnan(l_o_loss):

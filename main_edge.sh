@@ -8,7 +8,7 @@
 #SBATCH --account=ysinger_group
 
 batch_sizes=(100)
-bifurcations=(0 0.01)
+bifurcations=(0.01 0)
 crossval_ks=(1)
 datas=('linqs_cora')
 decays=(0)
@@ -19,7 +19,7 @@ log='DEBUG'
 lrs=(0.01)
 models=('edge')
 num_epochs=(1000)
-num_layerss=(10 20 30 40 50 60 70 80 90 100)
+num_layerss=(5 15 25 35 45 55)
 num_sampless=(100)
 save_params=1
 split_seeds=(0 1 2 3 4 5 6 7 8 9)

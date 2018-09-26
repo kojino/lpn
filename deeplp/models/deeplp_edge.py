@@ -23,7 +23,7 @@ class DeepLP_Edge(DeepLP):
 
     def _init_weights(self):
         self.theta = tf.Variable(
-            np.zeros((1, self.num_features)), dtype=tf.float32)
+            np.zeros((1, self.num_features)), dtype=tf.float32, name='theta')
 
         features_tf = tf.constant(self.features, dtype=tf.float32)
         values = tf.reduce_sum(features_tf * self.theta, axis=1) + 1
