@@ -53,11 +53,11 @@ class DeepLP:
             self.lr = lr
 
         # see bifurcate function for how these parameters are used
-        if self.bifurcation != None:
-            self.a = self.bifurcation * tf.Variable(
-                0, dtype=tf.float32, name='bif_a')
-            self.b = self.bifurcation * tf.Variable(
-                0, dtype=tf.float32, name='bif_b')
+        if self.bifurcation:
+            self.a = tf.Variable(0, dtype=tf.float32, name='bif_a')
+            self.a_scaled = self.bifurcation * self.a
+            self.b = tf.constant(0, dtype=tf.float32, name='bif_b')
+            self.b_scaled = self.bifurcation * self.b
 
         self.opt_op = self._build()
         self._summary()
@@ -72,7 +72,7 @@ class DeepLP:
         """
 
         def bifurcate(h, t):
-            return h**(self.a * t + self.b + 1.0)
+            return tf.pow(h, self.a_scaled * t + self.b_scaled + 1.0)
 
         def condition(h, t):
             return t < self.num_layers

@@ -41,5 +41,5 @@ class DeepLP_Edge(DeepLP):
     def _regularize_loss(self):
         regularizer = tf.contrib.layers.l2_regularizer(scale=self.lamda)
         theta_penalty = tf.contrib.layers.apply_regularization(
-            regularizer, [self.theta])
+            regularizer, [self.theta, self.a_scaled, self.b_scaled])
         return theta_penalty

@@ -221,7 +221,7 @@ def main(args):
                 objectives.append(objective)
                 valaccs.append(validation_accuracy)
             writer.add_summary(summary, global_step=epoch)
-            if epoch != 0 and (epoch + 1) % 10 == 0:
+            if epoch != 0 and (epoch + 1) % 1 == 0:
                 logger.info('saving checkpoint')
                 save_path = saver.save(sess, f"{ckpt_dir}/model.ckpt")
                 if args.save_params:
