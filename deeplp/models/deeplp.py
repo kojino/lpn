@@ -45,6 +45,7 @@ class DeepLP:
         self.validation_labeled = tf.placeholder("float", shape=shape)
         self.masked = tf.placeholder("float", shape=shape)
         self.weights = self._init_weights()
+        self.keep_prob = tf.placeholder("float")
         self.global_step = tf.placeholder(tf.int32)
         if decay:
             self.lr = tf.train.cosine_decay_restarts(lr, self.global_step,
@@ -53,11 +54,10 @@ class DeepLP:
             self.lr = lr
 
         # see bifurcate function for how these parameters are used
-        if self.bifurcation:
-            self.a = tf.Variable(0, dtype=tf.float32, name='bif_a')
-            self.a_scaled = self.bifurcation * self.a
-            self.b = tf.constant(0, dtype=tf.float32, name='bif_b')
-            self.b_scaled = self.bifurcation * self.b
+        self.a = tf.Variable(0, dtype=tf.float32, name='bif_a')
+        self.a_scaled = self.bifurcation * self.a
+        self.b = tf.Variable(0, dtype=tf.float32, name='bif_b')
+        self.b_scaled = self.bifurcation * self.b
 
         self.opt_op = self._build()
         self._summary()
@@ -72,7 +72,8 @@ class DeepLP:
         """
 
         def bifurcate(h, t):
-            return tf.pow(h, self.a_scaled * t + self.b_scaled + 1.0)
+            return tf.exp(
+                (self.a_scaled * t + self.b_scaled + 1.0) * tf.log(h + EPS))
 
         def condition(h, t):
             return t < self.num_layers
@@ -83,6 +84,10 @@ class DeepLP:
                 h = bifurcate(h, t)
                 h = h / tf.reduce_sum(h + EPS, axis=2, keepdims=True)
             h = h * (1 - self.labeled) + self.X * self.labeled
+            h = tf.nn.dropout(
+                h,
+                keep_prob=self.keep_prob,
+                noise_shape=[self.num_nodes, 1, 1])
             return h, t + 1.0
 
         self.yhat, _ = tf.while_loop(condition, loop, loop_vars=[self.X, 0.0])

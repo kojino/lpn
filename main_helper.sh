@@ -4,8 +4,7 @@
 #SBATCH -t 5-05:01:00
 #SBATCH --mem 3999
 #SBATCH -J edge_master
-#SBATCH -p shared
-#SBATCH --account=ysinger_group
+#SBATCH -p general, shared
 
 python -m deeplp.main \
 --batch_size=${1} \
@@ -14,15 +13,16 @@ python -m deeplp.main \
 --data=${4} \
 --decay=${5} \
 --feature_type=${6} \
---lamda=${7} \
---leave_k=${8} \
---log=${9} \
---lr=${10} \
---model=${11} \
---num_epoch=${12} \
---num_layers=${13} \
---num_samples=${14} \
---save_params=${15} \
---split_seed=${16} \
---unlabel_prob=${17} \
---weighted_loss=${18} 
+--keep_prob=${7} \
+--lamda=${8} \
+--leave_k=${9} \
+--log=${10} \
+--lr=${11} \
+--model=${12} \
+--num_epoch=${13} \
+--num_layers=${14} \
+--num_samples=${15} \
+--save_params=${16} \
+--split_seed=${17} \
+--unlabel_prob=${18} \
+--weighted_loss=${19} 

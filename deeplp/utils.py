@@ -81,7 +81,7 @@ def load_data(data_path, model='edge', feature_type='all'):
 
 
 def prepare_data(model, labels, is_labeled, labeled_indices, held_out_indices,
-                 true_labels, leave_k, num_samples, seed):
+                 true_labels, leave_k, num_samples, seed, keep_prob):
     """
     Construct masked data and validation data to be fed into the network.
     Data will have its labeled nodes masked according to leave_k.
@@ -126,6 +126,7 @@ def prepare_data(model, labels, is_labeled, labeled_indices, held_out_indices,
         validation_labeled = true_labeled
     # construct validation data
     validation_data = {
+        model.keep_prob: 1.0,
         model.X: labels.reshape(num_nodes, 1, num_classes),
         model.y: y,
         model.labeled: true_labeled,
@@ -155,6 +156,7 @@ def prepare_data(model, labels, is_labeled, labeled_indices, held_out_indices,
 
     # construct data used to train the model
     train_data = {
+        model.keep_prob: keep_prob,
         model.X: X,
         model.y: y,
         model.labeled: labeled,

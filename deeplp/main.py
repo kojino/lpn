@@ -54,7 +54,7 @@ def main(args):
     # change exp_name to include any varying parameters
     date = datetime.datetime.now()
     exp_name = (
-        f"deeplp_{args.bifurcation}_{args.lamda}_{args.split_seed}_{args.num_layers}_{args.lr}_{args.crossval_k}")
+        f"deeplp_{args.data}_{args.bifurcation}_{args.keep_prob}_{args.split_seed}")
 
     # create directory and file for saving log
     exp_dir = 'experiment_results/' + exp_name
@@ -131,7 +131,10 @@ def main(args):
             Model = DeepLP_Edge
         else:
             Model = DeepLP_WRBF
-
+        if args.lamda < -50:
+            lamda = 0.0
+        else:
+            lamda = 2**args.lamda
         model = Model(
             graph,
             features,
@@ -141,14 +144,14 @@ def main(args):
             weighted_loss=args.weighted_loss,
             lr=args.lr,
             num_layers=args.num_layers,
-            lamda=2**args.lamda,
+            lamda=lamda,
             seed=args.split_seed,
             bifurcation=args.bifurcation,
             decay=args.decay)
 
         train_data, validation_data, num_samples = prepare_data(model,
             cv_labels, cv_is_labeled, cv_labeled_indices, cv_held_out_indices, true_labels,
-            args.leave_k, args.num_samples, args.split_seed)
+            args.leave_k, args.num_samples, args.split_seed, args.keep_prob)
 
         logger.info('Model built.')
 
@@ -176,8 +179,8 @@ def main(args):
         objectives = []
         valaccs = []
         
-        l_o_loss, objective, validation_accuracy = sess.run(
-                [model.l_o_loss, model.objective, model.validation_accuracy], feed_dict=train_data)
+        l_o_loss, objective = sess.run(
+                [model.l_o_loss, model.objective], feed_dict=train_data)
         loss, accuracy, validation_accuracy = sess.run(
             [model.loss, model.accuracy, model.validation_accuracy], feed_dict=validation_data)
         log_info = (f"Epoch: 0, L-k-Loss: {l_o_loss:.5f}, "
@@ -193,10 +196,13 @@ def main(args):
             batch_data = {model.global_step: epoch}
             batch_indices = np.random.choice(num_samples, batch_size, replace=False)
             for key in train_data:
-                if train_data[key].shape[1] == num_samples:
-                    batch_data[key] = train_data[key][:,batch_indices,:]
-                else:
+                if type(train_data[key]) == float:
                     batch_data[key] = train_data[key]
+                else:
+                    if train_data[key].shape[1] == num_samples:
+                        batch_data[key] = train_data[key][:,batch_indices,:]
+                    else:
+                        batch_data[key] = train_data[key]
             _, summary, l_o_loss, objective = sess.run(
                 [model.opt_op, model.summary_op, model.l_o_loss, model.objective], feed_dict=batch_data)
             
@@ -221,7 +227,7 @@ def main(args):
                 objectives.append(objective)
                 valaccs.append(validation_accuracy)
             writer.add_summary(summary, global_step=epoch)
-            if epoch != 0 and (epoch + 1) % 1 == 0:
+            if epoch != 0 and (epoch + 1) % 10 == 0:
                 logger.info('saving checkpoint')
                 save_path = saver.save(sess, f"{ckpt_dir}/model.ckpt")
                 if args.save_params:
@@ -267,6 +273,9 @@ if __name__ == '__main__':
         default='all',
         help='types of features to use',
         choices=['all', 'raw', 'raw_reduced'])
+
+    parser.add_argument(
+        '--keep_prob', default=1.0, type=float)
 
     parser.add_argument(
         '--lamda', default=-14, type=float, help='regularization parameter, 2**(x)')

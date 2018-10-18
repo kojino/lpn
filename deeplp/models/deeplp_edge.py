@@ -22,8 +22,10 @@ class DeepLP_Edge(DeepLP):
         tf.summary.histogram("weights", self.weights.values)
 
     def _init_weights(self):
-        self.theta = tf.Variable(
-            np.zeros((1, self.num_features)), dtype=tf.float32, name='theta')
+        self.theta = tf.get_variable(
+            "theta",
+            shape=(1, self.num_features),
+            initializer=tf.contrib.layers.xavier_initializer())
 
         features_tf = tf.constant(self.features, dtype=tf.float32)
         values = tf.reduce_sum(features_tf * self.theta, axis=1) + 1

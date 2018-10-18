@@ -5,24 +5,24 @@
 #SBATCH --mem 3999
 #SBATCH -J edge_master
 #SBATCH -p shared
-#SBATCH --account=ysinger_group
 
 batch_sizes=(100)
-bifurcations=(0.01 0)
+bifurcations=(0 0.001)
 crossval_ks=(1)
-datas=('linqs_cora')
+datas=('linqs_citeseer' 'linqs_cora')
 decays=(0)
 feature_types=('all')
-lamdas=(-14 -12 -10 -8 -6 -4 -2 0 2)
+keep_probs=(0.8 0.9 1.0)
+lamdas=(-200)
 leave_ks=(1)
 log='DEBUG'
 lrs=(0.01)
 models=('edge')
 num_epochs=(1000)
-num_layerss=(10 20 30 40 50 60 70 80 90 100)
+num_layerss=(100)
 num_sampless=(100)
 save_params=1
-split_seeds=(0 1 2 3 4 5 6 7 8 9)
+split_seeds=($(seq 0 1 99))
 unlabel_probs=(0.99)
 weighted_loss=1
 
@@ -39,6 +39,8 @@ do
 for num_layers in ${num_layerss[@]}
 do
 for split_seed in ${split_seeds[@]}
+do
+for keep_prob in ${keep_probs[@]}
 do
 for num_epoch in ${num_epochs[@]}
 do
@@ -63,6 +65,7 @@ $crossval_k \
 $data \
 $decay \
 $feature_type \
+$keep_prob \
 $lamda \
 $leave_k \
 $log \
@@ -75,6 +78,7 @@ $save_params \
 $split_seed \
 $unlabel_prob \
 $weighted_loss 
+done
 done
 done
 done
