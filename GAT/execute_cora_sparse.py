@@ -3,7 +3,7 @@ import scipy.sparse as sp
 import numpy as np
 import tensorflow as tf
 import argparse
-
+import sys
 from models import GAT
 from models import SpGAT
 from utils import process
@@ -77,7 +77,7 @@ else:
     adj = adj.todense()
     adj = adj[np.newaxis]
     biases = process.adj_to_bias(adj, [nb_nodes], nhood=1)
-
+sys.stdout.flush()
 with tf.Graph().as_default():
     with tf.name_scope('input'):
         ftr_in = tf.placeholder(
@@ -135,6 +135,8 @@ with tf.Graph().as_default():
         val_acc_avg = 0
 
         for epoch in range(nb_epochs):
+
+            sys.stdout.flush()
             tr_step = 0
             tr_size = features.shape[0]
 
