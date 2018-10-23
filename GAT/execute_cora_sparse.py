@@ -24,7 +24,8 @@ sparse = True
 
 # training params
 batch_size = 1
-nb_epochs = 100000
+# nb_epochs = 100000
+nb_epochs = 10
 patience = 100
 lr = 0.005  # learning rate
 l2_coef = 0.0005  # weight decay
@@ -117,7 +118,7 @@ with tf.Graph().as_default():
 
     train_op = model.training(loss, lr, l2_coef)
 
-    saver = tf.train.Saver()
+    # saver = tf.train.Saver()
 
     init_op = tf.group(tf.global_variables_initializer(),
                        tf.local_variables_initializer())
@@ -212,7 +213,7 @@ with tf.Graph().as_default():
                 if val_acc_avg / vl_step >= vacc_mx and val_loss_avg / vl_step <= vlss_mn:
                     vacc_early_model = val_acc_avg / vl_step
                     vlss_early_model = val_loss_avg / vl_step
-                    saver.save(sess, checkpt_file)
+                    # saver.save(sess, checkpt_file)
                 vacc_mx = np.max((val_acc_avg / vl_step, vacc_mx))
                 vlss_mn = np.min((val_loss_avg / vl_step, vlss_mn))
                 curr_step = 0
@@ -230,7 +231,7 @@ with tf.Graph().as_default():
             val_loss_avg = 0
             val_acc_avg = 0
 
-        saver.restore(sess, checkpt_file)
+        # saver.restore(sess, checkpt_file)
 
         ts_size = features.shape[0]
         ts_step = 0
