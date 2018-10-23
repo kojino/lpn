@@ -1,44 +1,42 @@
-from __future__ import print_function
-from pathlib import Path
-from sklearn.metrics import f1_score
-
 import argparse
-import csv
-import numpy as np
+import copy
+import datetime
+import logging
+import os
+import random
 import pandas as pd
 import sys
+from random import shuffle
+import math
+import networkx as nx
+import numpy as np
 import tensorflow as tf
-import time
+from tensorflow.python import debug as tf_debug
 
-from deeplp.models.data_prep import create_weighted_graph
-from deeplp.models.data_prep import load_data
-from deeplp.models.data_prep import prepare_data, calc_masks
-from deeplp.models.data_prep import random_unlabel
+from deeplp.models.deeplp_att import DeepLP_ATT
+from deeplp.models.deeplp_edge import DeepLP_Edge
+from deeplp.models.deeplp_wrbf import DeepLP_WRBF
 from deeplp.models.lp import LP
-from deeplp.models.utils import accuracy
-from deeplp.models.utils import indices_to_vec
-from deeplp.models.utils import array_to_one_hot
-from deeplp.models.data_prep import select_features
+from deeplp.utils import (calc_masks, create_seed_features, load_data,
+                          num_layers_dict, prepare_data, random_unlabel)
+
+# from deeplp.models.data_prep import select_features
 
 
 def main(args):
-    true_labels, edge_features, node_features, weights \
-    = load_data(args.data,'linqs',directed=1)
 
-    weights_one = weights > 0
-
+    true_labels, features, weights = load_data(
+        'linqs_cora', model='edge', feature_type='all')
+    for seed in range(100):
     labeled_indices, unlabeled_indices = \
-        random_unlabel(true_labels,args.unlabel_prob,
-                       seed=args.split_seed)
+        random_unlabel(true_labels, args.unlabel_prob, seed)
 
     num_nodes, num_classes = true_labels.shape
-
     labels, is_labeled = calc_masks(true_labels, labeled_indices,
                                     unlabeled_indices)
 
-    weights_one = weights > 0
-
     y_true = np.argmax(true_labels[unlabeled_indices], axis=1)
+    weights_one = weights > 0
 
     results = pd.DataFrame({
         'data': [],
@@ -49,9 +47,7 @@ def main(args):
         'iter': [],
         'clamp': [],
         'laplacian': [],
-        'accuracy': [],
-        'f1_micro': [],
-        'f1_macro': []
+        'accuracy': []
     })
 
     def save_result(results, unlabeled_pred, model, weight_id, iter_id, clamp,
@@ -60,8 +56,6 @@ def main(args):
         # print(np.sum(unlabeled_pred,axis=1))
         y_pred = np.argmax(unlabeled_pred, axis=1)
         y_true = np.argmax(true_labels[unlabeled_indices], axis=1)
-        f1_macro = f1_score(y_true, y_pred, average='macro')
-        f1_micro = f1_score(y_true, y_pred, average='micro')
         accuracy = np.mean(y_pred == y_true)
 
         results = results.append(
@@ -75,8 +69,6 @@ def main(args):
                 'clamp': clamp,
                 'laplacian': laplacian,
                 'accuracy': accuracy,
-                'f1_micro': f1_micro,
-                'f1_macro': f1_macro
             },
             ignore_index=True)
         return results
@@ -90,7 +82,7 @@ def main(args):
                               None, None, None)
 
     print("LP iterative form")
-    for iter_id in [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]:
+    for iter_id in [100]:
         print(iter_id)
         for weight_id, weights_np in enumerate([weights, weights_one]):
             print(weight_id)
@@ -206,5 +198,5 @@ if __name__ == '__main__':
         help='fraction of unlabeled nodes')
 
     args = parser.parse_args()
-    print(args)
+    # print(args)
     main(args)

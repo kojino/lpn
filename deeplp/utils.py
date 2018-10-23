@@ -1,9 +1,12 @@
 import logging
 import os
+import sys
+import pickle as pkl
 
 import networkx as nx
 import numpy as np
 import scipy as sp
+import scipy.sparse as spar
 from community import community_louvain
 import tensorflow as tf
 from scipy.sparse import coo_matrix, csr_matrix
@@ -78,10 +81,126 @@ def load_data(data_path, model='edge', feature_type='all'):
     logger.info("Loaded all data.")
 
     return true_labels, features, graph
+        
+def random_unlabel(true_labels, unlabel_prob, seed=None):
+    """
+    Randomly unlabel nodes.
+    Always have at least one node from each class.
+    """
+    np.random.seed(seed)
+    num_nodes, num_classes = true_labels.shape
+    num_unlabeled = int(num_nodes * unlabel_prob)
+
+    # from each class, sample at least one index for labeled
+    labeled_indices_from_class = []
+    for class_id in range(num_classes):
+        labeled_indices_from_class.append(
+            np.random.choice(np.where(true_labels[:, class_id])[0]))
+
+    # sample indices to unlabel
+    indices_left = [
+        i for i in range(num_nodes) if i not in labeled_indices_from_class
+    ]
+    unlabeled_indices = np.random.choice(
+        indices_left, num_unlabeled, replace=False)
+    unlabeled_indices = np.array(sorted(unlabeled_indices))
+    labeled_indices = np.delete(np.arange(num_nodes), unlabeled_indices)
+    logger.info(f"Randomly unlabel {num_unlabeled} indices.")
+
+    return labeled_indices, unlabeled_indices
+
+def load_and_prepare_planetoid_data(data_path, seed=-1):
+    adj, features, allx, ally, y_train, y_val, y_test, labels = load_planetoid_data(data_path)
+    x_path = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', f'data/{data_path}/features.csv'))
+    features = np.loadtxt(x_path, delimiter=',')
+    true_labels = labels
+    graph = adj
+    labeled_indices = np.where(np.sum(y_train,axis=1))[0]
+    unlabeled_indices = np.where(1-np.sum(y_train,axis=1))[0]
+    validation_indices = np.where(np.sum(y_val,axis=1))[0]
+    test_indices = np.where(np.sum(y_test,axis=1))[0]
+
+    if seed != -1:
+        np.random.seed(seed)
+        num_nodes, num_classes = true_labels.shape
+        num_unlabeled = unlabeled_indices.shape[0]
+
+        labeled_indices = np.where(np.sum(y_train,axis=1))[0]
+        unlabeled_indices = np.where(1-np.sum(y_train,axis=1))[0]
+        test_val_indices = np.random.choice(unlabeled_indices,len(validation_indices)+len(test_indices))
+        validation_indices = test_val_indices[:len(validation_indices)]
+        test_indices = test_val_indices[len(validation_indices):]
+
+    return true_labels, features, graph, labeled_indices, unlabeled_indices, test_indices
+
+def load_planetoid_data(dataset_str):
+    """
+    Loads input data from gcn/data directory
+    ind.dataset_str.x => the feature vectors of the training instances as scipy.sparse.csr.csr_matrix object;
+    ind.dataset_str.tx => the feature vectors of the test instances as scipy.sparse.csr.csr_matrix object;
+    ind.dataset_str.allx => the feature vectors of both labeled and unlabeled training instances
+        (a superset of ind.dataset_str.x) as scipy.sparse.csr.csr_matrix object;
+    ind.dataset_str.y => the one-hot labels of the labeled training instances as numpy.ndarray object;
+    ind.dataset_str.ty => the one-hot labels of the test instances as numpy.ndarray object;
+    ind.dataset_str.ally => the labels for instances in ind.dataset_str.allx as numpy.ndarray object;
+    ind.dataset_str.graph => a dict in the format {index: [index_of_neighbor_nodes]} as collections.defaultdict
+        object;
+    ind.dataset_str.test.index => the indices of test instances in graph, for the inductive setting as list object.
+    All objects above must be saved using python pickle module.
+    :param dataset_str: Dataset name
+    :return: All data input files loaded (as well the training/test data).
+    """
+    names = ['x', 'y', 'tx', 'ty', 'allx', 'ally', 'graph']
+    objects = []
+    for i in range(len(names)):
+        print(i)
+        with open(os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', f"data/{dataset_str}/{names[i]}")), 'rb') as f:
+            if sys.version_info > (3, 0):
+                objects.append(pkl.load(f, encoding='latin1'))
+            else:
+                objects.append(pkl.load(f))
+
+    x, y, tx, ty, allx, ally, graph = tuple(objects)
+    test_idx_reorder = parse_index_file(os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', f"data/{dataset_str}/test.index")))
+    test_idx_range = np.sort(test_idx_reorder)
+
+    if dataset_str == 'linqs_citeseer_planetoid':
+        # Fix citeseer dataset (there are some isolated nodes in the graph)
+        # Find isolated nodes, add them as zero-vecs into the right position
+        test_idx_range_full = range(min(test_idx_reorder), max(test_idx_reorder)+1)
+        tx_extended = spar.lil_matrix((len(test_idx_range_full), x.shape[1]))
+        tx_extended[test_idx_range-min(test_idx_range), :] = tx
+        tx = tx_extended
+        ty_extended = np.zeros((len(test_idx_range_full), y.shape[1]))
+        ty_extended[test_idx_range-min(test_idx_range), :] = ty
+        ty = ty_extended
+
+    features = spar.vstack((allx, tx)).tolil()
+    features[test_idx_reorder, :] = features[test_idx_range, :]
+    adj = nx.adjacency_matrix(nx.from_dict_of_lists(graph))
+
+    labels = np.vstack((ally, ty))
+    labels[test_idx_reorder, :] = labels[test_idx_range, :]
+
+    idx_test = test_idx_range.tolist()
+    idx_train = range(len(y))
+    idx_val = range(len(y), len(y)+500)
+
+    train_mask = sample_mask(idx_train, labels.shape[0])
+    val_mask = sample_mask(idx_val, labels.shape[0])
+    test_mask = sample_mask(idx_test, labels.shape[0])
+
+    y_train = np.zeros(labels.shape)
+    y_val = np.zeros(labels.shape)
+    y_test = np.zeros(labels.shape)
+    y_train[train_mask, :] = labels[train_mask, :]
+    y_val[val_mask, :] = labels[val_mask, :]
+    y_test[test_mask, :] = labels[test_mask, :]
+    return adj, features, allx, ally, y_train, y_val, y_test, labels
 
 
 def prepare_data(model, labels, is_labeled, labeled_indices, held_out_indices,
-                 true_labels, leave_k, num_samples, seed, keep_prob):
+                 true_labels, leave_k, num_samples, seed, keep_prob, target_indices = None):
     """
     Construct masked data and validation data to be fed into the network.
     Data will have its labeled nodes masked according to leave_k.
@@ -124,12 +243,19 @@ def prepare_data(model, labels, is_labeled, labeled_indices, held_out_indices,
         # np.max(validation_labeled,axis=2) * (np.sum(y,axis=2) == np.sum(y,axis=2)) / 
     else:
         validation_labeled = true_labeled
+
+
+    target_labeled = np.zeros(num_nodes)
+    target_labeled[target_indices] = 1
+    target_labeled = np.repeat(target_labeled.reshape(num_nodes, 1), num_classes, axis=-1)
+    target_labeled = target_labeled.reshape(num_nodes, 1, num_classes)
     # construct validation data
     validation_data = {
         model.keep_prob: 1.0,
         model.X: labels.reshape(num_nodes, 1, num_classes),
         model.y: y,
         model.labeled: true_labeled,
+        model.target_labeled: target_labeled,
         model.true_labeled: true_labeled,  # this will not be used
         model.validation_labeled: validation_labeled,
         model.masked: masked  # this will not be used
@@ -160,41 +286,13 @@ def prepare_data(model, labels, is_labeled, labeled_indices, held_out_indices,
         model.X: X,
         model.y: y,
         model.labeled: labeled,
+        model.target_labeled: target_labeled,
         model.true_labeled: true_labeled,
         model.validation_labeled: validation_labeled,
         model.masked: masked
     }
 
     return train_data, validation_data, num_samples
-
-
-
-def random_unlabel(true_labels, unlabel_prob, seed=None):
-    """
-    Randomly unlabel nodes.
-    Always have at least one node from each class.
-    """
-    np.random.seed(seed)
-    num_nodes, num_classes = true_labels.shape
-    num_unlabeled = int(num_nodes * unlabel_prob)
-
-    # from each class, sample at least one index for labeled
-    labeled_indices_from_class = []
-    for class_id in range(num_classes):
-        labeled_indices_from_class.append(
-            np.random.choice(np.where(true_labels[:, class_id])[0]))
-
-    # sample indices to unlabel
-    indices_left = [
-        i for i in range(num_nodes) if i not in labeled_indices_from_class
-    ]
-    unlabeled_indices = np.random.choice(
-        indices_left, num_unlabeled, replace=False)
-    unlabeled_indices = np.array(sorted(unlabeled_indices))
-    labeled_indices = np.delete(np.arange(num_nodes), unlabeled_indices)
-    logger.info(f"Randomly unlabel {num_unlabeled} indices.")
-
-    return labeled_indices, unlabeled_indices
 
 
 def calc_masks(true_labels, labeled_indices, unlabeled_indices):
@@ -271,6 +369,66 @@ def create_seed_features(graph, labeled_indices, true_labels):
     logger.info("Generated seed features.")
 
     return seed_features
+
+def create_seed_features_planetoid(graph, labeled_indices, true_labels):
+    """
+    For each node, for each label, calculate the shortest and average
+    distance to seed node with that label.
+    """
+    U = nx.from_scipy_sparse_matrix(graph)  # undirected
+    B = U.to_directed()
+    edges = np.array(B.edges())
+    sources, sinks = edges[:, 0], edges[:, 1]
+    subU_nodes = list(max(nx.connected_component_subgraphs(U), key=len).nodes())
+    subU = U.subgraph(subU_nodes)
+    in_subU = (np.in1d(sources,list(subU_nodes))) & (np.in1d(sinks,list(subU_nodes)))
+    num_connected = len(subU_nodes)
+
+    # calculate shortest path length to each seed node
+    seed_to_node_lengths = []  # num_labeled * num_nodes matrix
+    for i in labeled_indices:
+        shortest_paths_seed = nx.shortest_path_length(B, source=int(i))
+        path_lengths = [i[1] for i in sorted(shortest_paths_seed.items())]
+        if len(path_lengths) != num_connected:
+            path_lengths = list(np.repeat(20,num_connected))
+        seed_to_node_lengths.append(path_lengths)
+    seed_to_node_lengths = np.array(seed_to_node_lengths)
+
+    # create label => list of seed indices dict
+    labels_for_seeds = np.argmax(true_labels[labeled_indices], axis=1)
+    labels_for_seeds_dict = {}
+    for i, label in enumerate(labels_for_seeds):
+        if label in labels_for_seeds_dict:
+            labels_for_seeds_dict[label].append(i)
+        else:
+            labels_for_seeds_dict[label] = [i]
+
+    # for each label, find the closest (or average) distance to
+    # seed with that label
+    seed_features = []
+    for label in labels_for_seeds_dict:
+        indices = labels_for_seeds_dict[label]
+        label_seed_to_node_lengths = seed_to_node_lengths[indices]
+        label_min_len_to_seed = np.zeros(len(B.nodes()))
+        label_min_len_to_seed[subU_nodes] = np.min(
+            label_seed_to_node_lengths, axis=0)
+        label_min_len_to_seed = label_min_len_to_seed[sources]
+        
+        label_mean_len_to_seed = np.zeros(len(B.nodes()))
+        label_mean_len_to_seed[subU_nodes] = np.mean(
+            label_seed_to_node_lengths, axis=0)
+        label_mean_len_to_seed = label_mean_len_to_seed[sources]
+        
+        seed_features.append(label_min_len_to_seed)
+        seed_features.append(label_mean_len_to_seed)
+
+    # normalize
+    seed_features = np.array(seed_features).T
+    seed_features = pos_normalize(seed_features)
+    logger.info("Generated seed features.")
+
+    return seed_features
+
 
 
 def array_to_one_hot(vec, num_classes=None):
@@ -520,7 +678,6 @@ def load_graph(data_path):
     logger.info(f"Loaded graph: {graph.shape}")
 
     node_features = np.loadtxt(x_path, delimiter=',')
-    node_features = node_features_np_to_dense(node_features)
 
     logger.info(f"Loaded node features: {node_features.shape}")
 
@@ -654,7 +811,7 @@ def node_partitions(U, sources, sinks):
 
 # 'edge_betweenness_D_full', 'edge_betweenness_R_full', 'edge_betweenness_B_full',
 # 'edge_current_flow_betweenness_full'
-def edge_centralities(B, D, R, U, edges, d_to_b_indices, r_to_b_indices,
+def edge_centralities(B, D, R, U, subU, in_subU, edges, d_to_b_indices, r_to_b_indices,
                       u_to_b_indices):
     edge_betweenness_D = listify(nx.edge_betweenness_centrality(D))
     edge_betweenness_D_full = np.zeros(edges.shape[0])
@@ -669,13 +826,20 @@ def edge_centralities(B, D, R, U, edges, d_to_b_indices, r_to_b_indices,
 
     # listify(nx.edge_load_centrality(U))
     # communicability_exp = nx.communicability_exp(U)
-    edge_current_flow_betweenness = listify(
-        nx.edge_current_flow_betweenness_centrality(U))
-    edge_current_flow_betweenness_full = edge_current_flow_betweenness[
-        u_to_b_indices]
+    if nx.is_connected(U):
+        edge_current_flow_betweenness = listify(
+            nx.edge_current_flow_betweenness_centrality(U))
+        edge_current_flow_betweenness_full = edge_current_flow_betweenness[
+            u_to_b_indices]
+    else:
+        edge_current_flow_betweenness = listify(
+            nx.edge_current_flow_betweenness_centrality(subU))
+        edge_current_flow_betweenness_full = np.zeros(edges.shape[0])
+        edge_current_flow_betweenness_full[in_subU] = edge_current_flow_betweenness[u_to_b_indices]
+
     edge_centralities = np.vstack(
         (edge_betweenness_D_full, edge_betweenness_R_full,
-         edge_betweenness_B_full, edge_current_flow_betweenness_full)).T
+        edge_betweenness_B_full, edge_current_flow_betweenness_full)).T
     logger.info(f'edge_centralities generated: {edge_centralities.shape}')
     return edge_centralities
 
@@ -684,17 +848,23 @@ def edge_centralities(B, D, R, U, edges, d_to_b_indices, r_to_b_indices,
 def link_predictions(U, edges):
     # resource_allocation_index = lisify_links(nx.resource_allocation_index(U,edges))
     jaccard_coefficient = lisify_links(nx.jaccard_coefficient(U, edges))
-    adamic_adar_index = lisify_links(nx.adamic_adar_index(U, edges))
+
+
     preferential_attachment = np.log(
         lisify_links(nx.preferential_attachment(U, edges)) + EPS)
+    adamic_adar_index = lisify_links(nx.adamic_adar_index(U, edges))
     link_features = np.vstack((jaccard_coefficient, adamic_adar_index,
-                               preferential_attachment)).T
+                            preferential_attachment)).T
+
     logger.info(f'link_predictions generated: {link_features.shape}')
     return link_features
 
 
 # 'communities_same', 'within_inter_cluster'
 def community_features(U, node_features, edges, sinks, sources):
+    within_inter_cluster = lisify_links(
+        nx.within_inter_cluster(U, ebunch=edges))
+    
     communities_dict = nx.algorithms.community.asyn_fluidc(U, k=5)
     communities = []
     for community in communities_dict:
@@ -706,8 +876,6 @@ def community_features(U, node_features, edges, sinks, sources):
         community_ids[sources] == community_ids[sinks]).astype(int)
     for i in range(node_features.shape[0]):
         U.node[i]['community'] = int(community_ids[i])
-    within_inter_cluster = lisify_links(
-        nx.within_inter_cluster(U, ebunch=edges))
     community_features = np.vstack([communities_same, within_inter_cluster]).T
     logger.info(f'community_features generated: {community_features.shape}')
     return community_features
@@ -738,3 +906,16 @@ def sigma_for_rbf(features, num_neighbors=10):
     knn_dists = np.apply_along_axis(get_kth_nearest_weight, 0, D)
     sigma = np.mean(knn_dists)**2
     return sigma
+
+def parse_index_file(filename):
+    """Parse index file."""
+    index = []
+    for line in open(filename):
+        index.append(int(line.strip()))
+    return index
+
+def sample_mask(idx, l):
+    """Create mask."""
+    mask = np.zeros(l)
+    mask[idx] = 1
+    return np.array(mask, dtype=np.bool)

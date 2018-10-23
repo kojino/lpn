@@ -23,6 +23,7 @@ python -m deeplp.main \
 --num_layers=${14} \
 --num_samples=${15} \
 --save_params=${16} \
---split_seed=${17} \
---unlabel_prob=${18} \
---weighted_loss=${19} 
+--setting=${17} \
+--split_seed=${18} \
+--unlabel_prob=${19} \
+--weighted_loss=${20} 

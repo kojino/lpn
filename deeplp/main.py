@@ -16,7 +16,7 @@ from deeplp.models.deeplp_att import DeepLP_ATT
 from deeplp.models.deeplp_edge import DeepLP_Edge
 from deeplp.models.deeplp_wrbf import DeepLP_WRBF
 from deeplp.models.lp import LP
-from deeplp.utils import (calc_masks, create_seed_features, load_data,
+from deeplp.utils import (calc_masks, create_seed_features, load_data, load_and_prepare_planetoid_data, create_seed_features_planetoid,
                           num_layers_dict, prepare_data, random_unlabel)
 
 logger = logging.getLogger("deeplp")
@@ -73,18 +73,24 @@ def main(args):
     for k, v in sorted(vars(args).items()):
         logger.debug("{0}: {1}".format(k, v))
     logger.debug("------")
+    if args.setting == 'lpn':
+        true_labels, features, graph = load_data(
+            args.data, model=args.model, feature_type=args.feature_type)
 
-    true_labels, features, graph = load_data(
-        args.data, model=args.model, feature_type=args.feature_type)
-
-    labeled_indices, unlabeled_indices = \
-        random_unlabel(true_labels, args.unlabel_prob, args.split_seed)
+        labeled_indices, unlabeled_indices = \
+            random_unlabel(true_labels, args.unlabel_prob, args.split_seed)
+    elif args.setting == 'planetoid':
+        true_labels, features, graph, labeled_indices, unlabeled_indices, test_indices = load_and_prepare_planetoid_data(args.data, seed=args.split_seed)
 
     num_nodes, num_classes = true_labels.shape
     labels, is_labeled = calc_masks(true_labels, labeled_indices,
                                     unlabeled_indices)
-    if args.feature_type == 'all':
-        seed_features = create_seed_features(graph, labeled_indices, true_labels)
+    if args.feature_type == 'all' and args.setting == 'lpn':
+        if args.setting == 'lpn':
+            seed_features = create_seed_features(graph, labeled_indices, true_labels)
+        # elif args.setting == 'planetoid':
+        #     seed_features = create_seed_features_planetoid(graph, labeled_indices, true_labels)
+
         if len(features) == 0:
             features = seed_features
         else:
@@ -94,13 +100,17 @@ def main(args):
     logger.info(f"Final num_features: {num_features}")
 
     lp = LP()
-    unlabeled_pred = lp.iter_sp(labels,
+    if args.setting == 'lpn':
+        target_indices = unlabeled_indices
+    else:
+        target_indices = test_indices
+    pred = lp.iter_sp(labels,
                             graph,
                             is_labeled,
                             args.num_layers,
-                            unlabeled_indices)
-    y_pred = np.argmax(unlabeled_pred,axis=1)
-    y_true = np.argmax(true_labels[unlabeled_indices],axis=1)
+                            target_indices)
+    y_pred = np.argmax(pred,axis=1)
+    y_true = np.argmax(true_labels[target_indices],axis=1)
     acc = np.mean(y_pred == y_true)  
     logger.info(f"Baseline Acc: {acc}")
 
@@ -151,7 +161,7 @@ def main(args):
 
         train_data, validation_data, num_samples = prepare_data(model,
             cv_labels, cv_is_labeled, cv_labeled_indices, cv_held_out_indices, true_labels,
-            args.leave_k, args.num_samples, args.split_seed, args.keep_prob)
+            args.leave_k, args.num_samples, args.split_seed, args.keep_prob, target_indices=target_indices)
 
         logger.info('Model built.')
 
@@ -206,14 +216,16 @@ def main(args):
             _, summary, l_o_loss, objective = sess.run(
                 [model.opt_op, model.summary_op, model.l_o_loss, model.objective], feed_dict=batch_data)
             
-            loss, accuracy, validation_accuracy = sess.run(
-                [model.loss, model.accuracy, model.validation_accuracy], feed_dict=validation_data)
+            loss, accuracy, validation_accuracy, target_accuracy = sess.run(
+                [model.loss, model.accuracy, model.validation_accuracy, model.target_accuracy], feed_dict=validation_data)
             if math.isnan(loss) or math.isnan(l_o_loss):
                 break
             log_info = (f"Epoch: {epoch+1}, L-k-Loss: {l_o_loss:.5f}, "
                         f"Loss: {loss:.5f}, Acc: {accuracy:.5f}")            
             if args.crossval_k > 1:
                 log_info += f", Val Acc {validation_accuracy:.5f}" 
+            if args.setting == 'planetoid':
+                log_info += f", Target Acc {target_accuracy:.5f}" 
             logger.info(log_info)
             if args.save_params:
                 a, b = sess.run([model.a, model.b])
@@ -318,6 +330,11 @@ if __name__ == '__main__':
         default=1,
         type=int,
         help='if 1, save theta and bif a, b to csv every epoch')
+
+    parser.add_argument(
+        '--setting',
+        default='lpn',
+        type=str)
 
     parser.add_argument('--split_seed', default=1, type=int,
                         help='random seed for labeled/unlabeled split')
