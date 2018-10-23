@@ -206,8 +206,8 @@ with tf.Graph().as_default():
                 vl_step += 1
 
             print(
-                'Training: loss = %.5f, acc = %.5f | Val: loss = %.5f, acc = %.5f'
-                % (train_loss_avg / tr_step, train_acc_avg / tr_step,
+                'Epoch: %d, Training: loss = %.5f, acc = %.5f | Val: loss = %.5f, acc = %.5f'
+                % (epoch, train_loss_avg / tr_step, train_acc_avg / tr_step,
                    val_loss_avg / vl_step, val_acc_avg / vl_step))
 
             if val_acc_avg / vl_step >= vacc_mx or val_loss_avg / vl_step <= vlss_mn:
