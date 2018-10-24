@@ -92,7 +92,7 @@ def main(args):
         labels, is_labeled = calc_masks(true_labels, labeled_indices,
                                     unlabeled_indices, None, logistic=args.logistic)        
 
-    if args.feature_type == 'all' and args.setting == 'lpn':
+    if args.feature_type == 'all':
         if args.setting == 'lpn':
             seed_features = create_seed_features(graph, labeled_indices, true_labels)
         elif args.setting == 'planetoid':
@@ -251,7 +251,7 @@ def main(args):
                 gccaccs.append(gcc_accuracy)
                 nogccaccs.append(nogcc_accuracy)
             writer.add_summary(summary, global_step=epoch)
-            if epoch != 0 and (epoch + 1) % 1 == 0:
+            if epoch != 0 and (epoch + 1) % 10 == 0:
                 logger.info('saving checkpoint')
                 save_path = saver.save(sess, f"{ckpt_dir}/model.ckpt")
                 if args.save_params:

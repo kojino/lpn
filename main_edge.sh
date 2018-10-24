@@ -9,7 +9,7 @@
 batch_sizes=(100)
 bifurcations=(0.001)
 crossval_ks=(5 1)
-datas=('linqs_citeseer_planetoid' 'linqs_cora_planetoid')
+datas=('linqs_pubmed_planetoid')
 decays=(0)
 feature_types=('all')
 keep_probs=(1.0)
