@@ -9,7 +9,7 @@
 batch_sizes=(100)
 bifurcations=(0.001)
 crossval_ks=(5 1)
-datas=('linqs_cora_planetoid' 'linqs_citeseer_planetoid')
+datas=('linqs_citeseer_planetoid' 'linqs_cora_planetoid')
 decays=(0)
 feature_types=('all')
 keep_probs=(1.0)
@@ -19,7 +19,7 @@ log='DEBUG'
 logistics=(1)
 lrs=(0.001)
 models=('edge')
-num_epochs=(3000)
+num_epochs=(2000)
 num_layerss=(-1)
 num_sampless=(100)
 save_params=1

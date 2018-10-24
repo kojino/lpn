@@ -24,7 +24,7 @@ logger = logging.getLogger("deeplp")
 EPS = 1e-10
 
 num_layers_dict = {
-    'linqs_citeseer': 90,
+    'linqs_citeseer': 20,
     'linqs_cora': 20,
     'linqs_pubmed': 20,
     'flip_cora': 10,
@@ -32,7 +32,7 @@ num_layers_dict = {
     'flip_flickr': 10,
     'flip_imdb': 70,
     'flip_industry': 40,
-    'linqs_citeseer_planetoid': 90,
+    'linqs_citeseer_planetoid': 20,
     'linqs_cora_planetoid': 20,
     'linqs_pubmed_planetoid': 20,
 }

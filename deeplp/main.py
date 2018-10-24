@@ -193,6 +193,9 @@ def main(args):
         losses = []
         objectives = []
         valaccs = []
+        targetaccs = []
+        gccaccs = []
+        nogccaccs = []
         
         l_o_loss, objective = sess.run(
                 [model.l_o_loss, model.objective], feed_dict=train_data)
@@ -244,6 +247,9 @@ def main(args):
                 losses.append(loss)
                 objectives.append(objective)
                 valaccs.append(validation_accuracy)
+                targetaccs.append(target_accuracy)
+                gccaccs.append(gcc_accuracy)
+                nogccaccs.append(nogcc_accuracy)
             writer.add_summary(summary, global_step=epoch)
             if epoch != 0 and (epoch + 1) % 10 == 0:
                 logger.info('saving checkpoint')
@@ -252,6 +258,10 @@ def main(args):
                     summary = [accs,losses,as_,bs_,objectives]
                     if args.crossval_k > 1:
                         summary.append(valaccs)
+                    if args.setting == 'planetoid':
+                        summary.append(targetaccs)
+                        summary.append(gccaccs)
+                        summary.append(nogccaccs)
                     if args.model == 'edge':
                         np.savetxt(f'params/theta/theta_{exp_name}.csv', np.array(thetas),delimiter=',',fmt="%.6f")                    
                     np.savetxt(f'params/summary/summary_{exp_name}.csv', np.array(summary).T,delimiter=',',fmt="%.6f")
