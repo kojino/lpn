@@ -8,7 +8,7 @@
 
 batch_sizes=(400)
 bifurcations=(0.001)
-crossval_ks=(5 1)
+crossval_ks=(1)
 datas=('linqs_pubmed_planetoid' 'linqs_cora_planetoid' 'linqs_citeseer_planetoid')
 decays=(0)
 feature_types=('all')
@@ -19,12 +19,12 @@ log='DEBUG'
 logistics=(1)
 lrs=(0.001)
 models=('edge')
-num_epochs=(2)
+num_epochs=(3000)
 num_layerss=(-1)
 num_sampless=(400)
 save_params=1
-settings=('planetoid_random')
-split_seeds=(0 1 2 3 4 5 6 7 8 9)
+settings=('planetoid_balanced')
+split_seeds=(-1 0 1 2 3 4 5 6 7 8 9)
 unlabel_probs=(0.99)
 weighted_loss=1
 
