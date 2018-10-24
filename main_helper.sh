@@ -2,9 +2,9 @@
 #SBATCH -o val2.%j.txt
 #SBATCH -e val2.%j.err
 #SBATCH -t 5-05:01:00
-#SBATCH --mem 4999
+#SBATCH --mem 3999
 #SBATCH -J edge_master
-#SBATCH -p shared
+#SBATCH -p serial_requeue
 
 python -m deeplp.main \
 --batch_size=${1} \

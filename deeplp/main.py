@@ -128,6 +128,17 @@ def main(args):
         cv_held_out_indices_list = [[]]
     finalvalaccs = []
     print('==================',labeled_indices)
+    cvs = []
+    thetas = []
+    as_ = []
+    bs_ = []
+    accs = []
+    losses = []
+    objectives = []
+    valaccs = []
+    targetaccs = []
+    gccaccs = []
+    nogccaccs = []
 
     for i, cv_held_out_indices in enumerate(cv_held_out_indices_list):
         logger.info(f"{i}th cross validation")
@@ -192,17 +203,6 @@ def main(args):
         if args.save_params:
             os.makedirs(f"params/summary", exist_ok=True)
             os.makedirs(f"params/theta", exist_ok=True)
-
-        thetas = []
-        as_ = []
-        bs_ = []
-        accs = []
-        losses = []
-        objectives = []
-        valaccs = []
-        targetaccs = []
-        gccaccs = []
-        nogccaccs = []
         
         l_o_loss, objective = sess.run(
                 [model.l_o_loss, model.objective], feed_dict=train_data)
@@ -248,6 +248,7 @@ def main(args):
                 if args.model == 'edge':
                     theta = sess.run([model.theta])
                     thetas.append(np.array(theta)[0,0,:])
+                cvs.append(i)
                 as_.append(a)
                 bs_.append(b)
                 accs.append(accuracy)
@@ -258,11 +259,11 @@ def main(args):
                 gccaccs.append(gcc_accuracy)
                 nogccaccs.append(nogcc_accuracy)
             writer.add_summary(summary, global_step=epoch)
-            if epoch != 0 and (epoch + 1) % 10 == 0:
+            if epoch != 0 and (epoch + 1) % 1 == 0:
                 logger.info('saving checkpoint')
                 save_path = saver.save(sess, f"{ckpt_dir}/model.ckpt")
                 if args.save_params:
-                    summary = [accs,losses,as_,bs_,objectives]
+                    summary = [cvs,accs,losses,as_,bs_,objectives]
                     if args.crossval_k > 1 or args.setting == 'planetoid_balanced':
                         summary.append(valaccs)
                     if 'planetoid' in args.setting:

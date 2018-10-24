@@ -4,7 +4,7 @@
 #SBATCH -t 05:01:00
 #SBATCH --mem 3999
 #SBATCH -J edge_master
-#SBATCH -p shared
+#SBATCH -p serial_requeue
 
 batch_sizes=(400)
 bifurcations=(0.001)
@@ -19,7 +19,7 @@ log='DEBUG'
 logistics=(1)
 lrs=(0.001)
 models=('edge')
-num_epochs=(2000)
+num_epochs=(2)
 num_layerss=(-1)
 num_sampless=(400)
 save_params=1
