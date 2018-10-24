@@ -150,6 +150,8 @@ def load_and_prepare_planetoid_data(data_path, seed=-1):
         test_val_indices = np.random.choice(unlabeled_indices,len(validation_indices)+len(test_indices))
         validation_indices = test_val_indices[:len(validation_indices)]
         test_indices = test_val_indices[len(validation_indices):]
+        gcc_unlabeled_indices = list(set.intersection(gcc_indices, set(unlabeled_indices)))
+        nogcc_unlabeled_indices = list(set.intersection(set(nogcc_indices), set(unlabeled_indices)))
     else:
         print('fixed seed')
 
