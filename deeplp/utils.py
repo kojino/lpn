@@ -112,7 +112,7 @@ def random_unlabel(true_labels, unlabel_prob, seed=None):
 
     return labeled_indices, unlabeled_indices
 
-def load_and_prepare_planetoid_data(data_path, seed=-1):
+def load_and_prepare_planetoid_data(data_path, setting, seed=-1):
     adj, raw_features, allx, ally, y_train, y_val, y_test, labels = load_planetoid_data(data_path)
     x_path = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', f'data/{data_path}/features.csv'))
     features = np.loadtxt(x_path, delimiter=',')
@@ -123,6 +123,7 @@ def load_and_prepare_planetoid_data(data_path, seed=-1):
     unlabeled_indices = np.where(1-np.sum(y_train,axis=1))[0]
     validation_indices = np.where(np.sum(y_val,axis=1))[0]
     test_indices = np.where(np.sum(y_test,axis=1))[0]
+    print('=========================',len(labeled_indices))
     G = nx.from_scipy_sparse_matrix(graph)
     gcc_indices = set(max(nx.connected_component_subgraphs(G), key=len).nodes())
     nogcc_indices = np.delete(np.arange(num_nodes), np.array(list(gcc_indices)))
@@ -132,21 +133,28 @@ def load_and_prepare_planetoid_data(data_path, seed=-1):
         print('randomize seed')
         np.random.seed(seed)
         num_unlabeled = unlabeled_indices.shape[0]
-        # from each class, sample at least one index for labeled
-        labeled_indices_from_class = []
-        for class_id in range(num_classes):
-            labeled_indices_from_class.append(
-                np.random.choice(np.where(true_labels[:, class_id])[0]))
+        if 'random' in setting:
+            print('random')
+            # from each class, sample at least one index for labeled
+            labeled_indices_from_class = []
+            for class_id in range(num_classes):
+                labeled_indices_from_class.append(
+                    np.random.choice(np.where(true_labels[:, class_id])[0]))
 
-        # sample indices to unlabel
-        indices_left = [
-            i for i in range(num_nodes) if i not in labeled_indices_from_class
-        ]
-        unlabeled_indices = np.random.choice(
-            indices_left, num_unlabeled, replace=False)
-        unlabeled_indices = np.array(sorted(unlabeled_indices))
-        labeled_indices = np.delete(np.arange(num_nodes), unlabeled_indices)
-
+            # sample indices to unlabel
+            indices_left = [
+                i for i in range(num_nodes) if i not in labeled_indices_from_class
+            ]
+            unlabeled_indices = np.random.choice(
+                indices_left, num_unlabeled, replace=False)
+            unlabeled_indices = np.array(sorted(unlabeled_indices))
+            labeled_indices = np.delete(np.arange(num_nodes), unlabeled_indices)
+        elif 'balanced' in setting:
+            print('balanced 20')
+            labeled_indices = []
+            for class_id in range(num_classes):
+                labeled_indices += list(np.random.choice(np.where(true_labels[:, class_id])[0],20, replace=False))
+            unlabeled_indices = np.delete(np.arange(num_nodes), labeled_indices)
         test_val_indices = np.random.choice(unlabeled_indices,len(validation_indices)+len(test_indices))
         validation_indices = test_val_indices[:len(validation_indices)]
         test_indices = test_val_indices[len(validation_indices):]
@@ -154,8 +162,8 @@ def load_and_prepare_planetoid_data(data_path, seed=-1):
         nogcc_unlabeled_indices = list(set.intersection(set(nogcc_indices), set(unlabeled_indices)))
     else:
         print('fixed seed')
-
-    return true_labels, features, raw_features, graph, labeled_indices, unlabeled_indices, test_indices, gcc_unlabeled_indices, nogcc_unlabeled_indices
+    print('=========================',len(labeled_indices))
+    return true_labels, features, raw_features, graph, labeled_indices, unlabeled_indices, test_indices, gcc_unlabeled_indices, nogcc_unlabeled_indices, validation_indices
 
 def load_planetoid_data(dataset_str):
     """
@@ -241,7 +249,7 @@ def prepare_data(model, labels, is_labeled, labeled_indices, held_out_indices,
         len(labeled_indices), leave_k, exact=True)
     if max_num_samples < num_samples:
         num_samples = max_num_samples
-
+    print(max_num_samples,num_samples)
     # true labels: y
     true_labeled = np.repeat(
         is_labeled.reshape(num_nodes, 1), num_classes, axis=-1)

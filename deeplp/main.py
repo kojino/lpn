@@ -55,7 +55,7 @@ def main(args):
     # change exp_name to include any varying parameters
     date = datetime.datetime.now()
     exp_name = (
-        f"deeplp_{args.data}_{args.lamda}_{args.split_seed}_{args.crossval_k}")
+        f"deeplp_{args.data}_{args.setting}_{args.lamda}_{args.split_seed}_{args.crossval_k}")
 
     # create directory and file for saving log
     exp_dir = 'experiment_results/' + exp_name
@@ -81,11 +81,11 @@ def main(args):
         labeled_indices, unlabeled_indices = \
             random_unlabel(true_labels, args.unlabel_prob, args.split_seed)
         target_indices, gcc_indices, nogcc_indices = unlabeled_indices, unlabeled_indices, unlabeled_indices
-    elif args.setting == 'planetoid':
-        true_labels, features, raw_features, graph, labeled_indices, unlabeled_indices, target_indices, gcc_indices, nogcc_indices = load_and_prepare_planetoid_data(args.data, seed=args.split_seed)
+    elif 'planetoid' in args.setting:
+        true_labels, features, raw_features, graph, labeled_indices, unlabeled_indices, target_indices, gcc_indices, nogcc_indices, validation_indices = load_and_prepare_planetoid_data(args.data, args.setting, seed=args.split_seed)
 
     num_nodes, num_classes = true_labels.shape
-    if  args.setting == 'planetoid':
+    if  'planetoid' in args.setting:
         labels, is_labeled = calc_masks(true_labels, labeled_indices,
                                     unlabeled_indices, raw_features, logistic=args.logistic)
     else:
@@ -95,7 +95,7 @@ def main(args):
     if args.feature_type == 'all':
         if args.setting == 'lpn':
             seed_features = create_seed_features(graph, labeled_indices, true_labels)
-        elif args.setting == 'planetoid':
+        elif 'planetoid' in args.setting:
             seed_features = create_seed_features_planetoid(graph, labeled_indices, true_labels)
 
         if len(features) == 0:
@@ -127,12 +127,13 @@ def main(args):
     if args.crossval_k == 1:
         cv_held_out_indices_list = [[]]
     finalvalaccs = []
+    print('==================',labeled_indices)
 
     for i, cv_held_out_indices in enumerate(cv_held_out_indices_list):
         logger.info(f"{i}th cross validation")
         cv_labeled_indices = [index for index in labeled_indices if index not in cv_held_out_indices]
         cv_unlabeled_indices = np.delete(np.arange(true_labels.shape[0]),cv_labeled_indices)
-        if  args.setting == 'planetoid':
+        if  'planetoid' in args.setting:
             cv_labels, cv_is_labeled = calc_masks(true_labels, cv_labeled_indices, cv_unlabeled_indices, raw_features, logistic=args.logistic)
         else:
             cv_labels, cv_is_labeled = calc_masks(true_labels, cv_labeled_indices, cv_unlabeled_indices, None, logistic=args.logistic)
@@ -163,12 +164,18 @@ def main(args):
             seed=args.split_seed,
             bifurcation=args.bifurcation,
             decay=args.decay)
-
-        train_data, validation_data, num_samples = prepare_data(model,
-            cv_labels, cv_is_labeled, cv_labeled_indices, cv_held_out_indices, true_labels,
-            args.leave_k, args.num_samples, args.split_seed, args.keep_prob, target_indices, gcc_indices, nogcc_indices)
-
+        if args.setting == 'planetoid_balanced':
+            train_data, validation_data, num_samples = prepare_data(model,
+                cv_labels, cv_is_labeled, cv_labeled_indices, validation_indices, true_labels,
+                args.leave_k, args.num_samples, args.split_seed, args.keep_prob, target_indices, gcc_indices, nogcc_indices)
+        else:
+            train_data, validation_data, num_samples = prepare_data(model,
+                cv_labels, cv_is_labeled, cv_labeled_indices, cv_held_out_indices, true_labels,
+                args.leave_k, args.num_samples, args.split_seed, args.keep_prob, target_indices, gcc_indices, nogcc_indices)
+        print('========================',num_samples)
+        
         logger.info('Model built.')
+        print(num_samples)
 
         sess = tf.Session()
         # sess = tf_debug.LocalCLIDebugWrapperSession(sess)
@@ -230,9 +237,9 @@ def main(args):
                 break
             log_info = (f"Epoch: {epoch+1}, L-k-Loss: {l_o_loss:.5f}, "
                         f"Loss: {loss:.5f}, Unlabeled Acc: {accuracy:.5f}")            
-            if args.crossval_k > 1:
+            if args.crossval_k > 1 or args.setting == 'planetoid_balanced':
                 log_info += f", Val Acc {validation_accuracy:.5f}" 
-            if args.setting == 'planetoid':
+            if 'planetoid' in args.setting:
                 log_info += f", Target Acc {target_accuracy:.5f}, Gcc Acc {gcc_accuracy:.5f}, No Gcc Acc {nogcc_accuracy:.5f}" 
                 
             logger.info(log_info)
@@ -256,9 +263,9 @@ def main(args):
                 save_path = saver.save(sess, f"{ckpt_dir}/model.ckpt")
                 if args.save_params:
                     summary = [accs,losses,as_,bs_,objectives]
-                    if args.crossval_k > 1:
+                    if args.crossval_k > 1 or args.setting == 'planetoid_balanced':
                         summary.append(valaccs)
-                    if args.setting == 'planetoid':
+                    if 'planetoid' in args.setting:
                         summary.append(targetaccs)
                         summary.append(gccaccs)
                         summary.append(nogccaccs)
