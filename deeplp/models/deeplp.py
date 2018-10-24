@@ -44,6 +44,8 @@ class DeepLP:
         self.target_labeled = tf.placeholder("float", shape=shape)
         self.true_labeled = tf.placeholder("float", shape=shape)
         self.validation_labeled = tf.placeholder("float", shape=shape)
+        self.gcc_labeled = tf.placeholder("float", shape=shape)
+        self.nogcc_labeled = tf.placeholder("float", shape=shape)
         self.masked = tf.placeholder("float", shape=shape)
         self.weights = self._init_weights()
         self.keep_prob = tf.placeholder("float")
@@ -111,6 +113,9 @@ class DeepLP:
                                        1 - self.true_labeled)
         self.target_accuracy = self._accuracy(self.y, self.yhat,
                                               self.target_labeled)
+        self.gcc_accuracy = self._accuracy(self.y, self.yhat, self.gcc_labeled)
+        self.nogcc_accuracy = self._accuracy(self.y, self.yhat,
+                                             self.nogcc_labeled)
         self.validation_accuracy = self._accuracy(self.y, self.yhat,
                                                   self.validation_labeled)
 

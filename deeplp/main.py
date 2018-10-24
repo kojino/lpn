@@ -33,7 +33,7 @@ def approx_chunk(seq, num):
     return out
 
 def main(args):
- 
+
     if args.crossval_k != 1:
         args.num_epoch = int(args.num_epoch / args.crossval_k)
 
@@ -50,11 +50,12 @@ def main(args):
 
     if args.num_layers == -1:
         args.num_layers = num_layers_dict[args.data]
+    print(args.num_layers)
 
     # change exp_name to include any varying parameters
     date = datetime.datetime.now()
     exp_name = (
-        f"deeplp_{args.data}_{args.bifurcation}_{args.keep_prob}_{args.split_seed}")
+        f"deeplp_{args.data}_{args.lamda}_{args.split_seed}_{args.crossval_k}")
 
     # create directory and file for saving log
     exp_dir = 'experiment_results/' + exp_name
@@ -79,17 +80,23 @@ def main(args):
 
         labeled_indices, unlabeled_indices = \
             random_unlabel(true_labels, args.unlabel_prob, args.split_seed)
+        target_indices, gcc_indices, nogcc_indices = unlabeled_indices, unlabeled_indices, unlabeled_indices
     elif args.setting == 'planetoid':
-        true_labels, features, graph, labeled_indices, unlabeled_indices, test_indices = load_and_prepare_planetoid_data(args.data, seed=args.split_seed)
+        true_labels, features, raw_features, graph, labeled_indices, unlabeled_indices, target_indices, gcc_indices, nogcc_indices = load_and_prepare_planetoid_data(args.data, seed=args.split_seed)
 
     num_nodes, num_classes = true_labels.shape
-    labels, is_labeled = calc_masks(true_labels, labeled_indices,
-                                    unlabeled_indices)
+    if  args.setting == 'planetoid':
+        labels, is_labeled = calc_masks(true_labels, labeled_indices,
+                                    unlabeled_indices, raw_features, logistic=args.logistic)
+    else:
+        labels, is_labeled = calc_masks(true_labels, labeled_indices,
+                                    unlabeled_indices, None, logistic=args.logistic)        
+
     if args.feature_type == 'all' and args.setting == 'lpn':
         if args.setting == 'lpn':
             seed_features = create_seed_features(graph, labeled_indices, true_labels)
-        # elif args.setting == 'planetoid':
-        #     seed_features = create_seed_features_planetoid(graph, labeled_indices, true_labels)
+        elif args.setting == 'planetoid':
+            seed_features = create_seed_features_planetoid(graph, labeled_indices, true_labels)
 
         if len(features) == 0:
             features = seed_features
@@ -100,10 +107,6 @@ def main(args):
     logger.info(f"Final num_features: {num_features}")
 
     lp = LP()
-    if args.setting == 'lpn':
-        target_indices = unlabeled_indices
-    else:
-        target_indices = test_indices
     pred = lp.iter_sp(labels,
                             graph,
                             is_labeled,
@@ -129,8 +132,10 @@ def main(args):
         logger.info(f"{i}th cross validation")
         cv_labeled_indices = [index for index in labeled_indices if index not in cv_held_out_indices]
         cv_unlabeled_indices = np.delete(np.arange(true_labels.shape[0]),cv_labeled_indices)
-        cv_labels, cv_is_labeled = calc_masks(true_labels, cv_labeled_indices, cv_unlabeled_indices)
-        
+        if  args.setting == 'planetoid':
+            cv_labels, cv_is_labeled = calc_masks(true_labels, cv_labeled_indices, cv_unlabeled_indices, raw_features, logistic=args.logistic)
+        else:
+            cv_labels, cv_is_labeled = calc_masks(true_labels, cv_labeled_indices, cv_unlabeled_indices, None, logistic=args.logistic)
         tf.reset_default_graph()
 
         logger.info('Applied leave-k-out.')
@@ -161,7 +166,7 @@ def main(args):
 
         train_data, validation_data, num_samples = prepare_data(model,
             cv_labels, cv_is_labeled, cv_labeled_indices, cv_held_out_indices, true_labels,
-            args.leave_k, args.num_samples, args.split_seed, args.keep_prob, target_indices=target_indices)
+            args.leave_k, args.num_samples, args.split_seed, args.keep_prob, target_indices, gcc_indices, nogcc_indices)
 
         logger.info('Model built.')
 
@@ -216,16 +221,17 @@ def main(args):
             _, summary, l_o_loss, objective = sess.run(
                 [model.opt_op, model.summary_op, model.l_o_loss, model.objective], feed_dict=batch_data)
             
-            loss, accuracy, validation_accuracy, target_accuracy = sess.run(
-                [model.loss, model.accuracy, model.validation_accuracy, model.target_accuracy], feed_dict=validation_data)
+            loss, accuracy, validation_accuracy, target_accuracy, gcc_accuracy, nogcc_accuracy = sess.run(
+                [model.loss, model.accuracy, model.validation_accuracy, model.target_accuracy, model.gcc_accuracy, model.nogcc_accuracy], feed_dict=validation_data)
             if math.isnan(loss) or math.isnan(l_o_loss):
                 break
             log_info = (f"Epoch: {epoch+1}, L-k-Loss: {l_o_loss:.5f}, "
-                        f"Loss: {loss:.5f}, Acc: {accuracy:.5f}")            
+                        f"Loss: {loss:.5f}, Unlabeled Acc: {accuracy:.5f}")            
             if args.crossval_k > 1:
                 log_info += f", Val Acc {validation_accuracy:.5f}" 
             if args.setting == 'planetoid':
-                log_info += f", Target Acc {target_accuracy:.5f}" 
+                log_info += f", Target Acc {target_accuracy:.5f}, Gcc Acc {gcc_accuracy:.5f}, No Gcc Acc {nogcc_accuracy:.5f}" 
+                
             logger.info(log_info)
             if args.save_params:
                 a, b = sess.run([model.a, model.b])
@@ -301,6 +307,12 @@ if __name__ == '__main__':
         type=str,
         help='logging level',
         choices=["DEBUG", "INFO"])
+
+    parser.add_argument(
+        '--logistic',
+        default=0,
+        type=int,
+        help='whether to initialize predictions with logistic regression')
 
     parser.add_argument('--lr', default=0.01, type=float,
                         help='learning rate')

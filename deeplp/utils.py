@@ -31,7 +31,10 @@ num_layers_dict = {
     'flip_dblp': 30,
     'flip_flickr': 10,
     'flip_imdb': 70,
-    'flip_industry': 40
+    'flip_industry': 40,
+    'linqs_citeseer_planetoid': 90,
+    'linqs_cora_planetoid': 20,
+    'linqs_pubmed_planetoid': 20,
 }
 
 
@@ -110,28 +113,34 @@ def random_unlabel(true_labels, unlabel_prob, seed=None):
     return labeled_indices, unlabeled_indices
 
 def load_and_prepare_planetoid_data(data_path, seed=-1):
-    adj, features, allx, ally, y_train, y_val, y_test, labels = load_planetoid_data(data_path)
+    adj, raw_features, allx, ally, y_train, y_val, y_test, labels = load_planetoid_data(data_path)
     x_path = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', f'data/{data_path}/features.csv'))
     features = np.loadtxt(x_path, delimiter=',')
     true_labels = labels
+    num_nodes, num_classes = true_labels.shape
     graph = adj
     labeled_indices = np.where(np.sum(y_train,axis=1))[0]
     unlabeled_indices = np.where(1-np.sum(y_train,axis=1))[0]
     validation_indices = np.where(np.sum(y_val,axis=1))[0]
     test_indices = np.where(np.sum(y_test,axis=1))[0]
-
+    G = nx.from_scipy_sparse_matrix(graph)
+    gcc_indices = set(max(nx.connected_component_subgraphs(G), key=len).nodes())
+    nogcc_indices = np.delete(np.arange(num_nodes), np.array(list(gcc_indices)))
+    gcc_unlabeled_indices = list(set.intersection(gcc_indices, set(unlabeled_indices)))
+    nogcc_unlabeled_indices = list(set.intersection(set(nogcc_indices), set(unlabeled_indices)))
     if seed != -1:
+        print('randomize seed')
         np.random.seed(seed)
-        num_nodes, num_classes = true_labels.shape
         num_unlabeled = unlabeled_indices.shape[0]
-
         labeled_indices = np.where(np.sum(y_train,axis=1))[0]
         unlabeled_indices = np.where(1-np.sum(y_train,axis=1))[0]
         test_val_indices = np.random.choice(unlabeled_indices,len(validation_indices)+len(test_indices))
         validation_indices = test_val_indices[:len(validation_indices)]
         test_indices = test_val_indices[len(validation_indices):]
+    else:
+        print('fixed seed')
 
-    return true_labels, features, graph, labeled_indices, unlabeled_indices, test_indices
+    return true_labels, features, raw_features, graph, labeled_indices, unlabeled_indices, test_indices, gcc_unlabeled_indices, nogcc_unlabeled_indices
 
 def load_planetoid_data(dataset_str):
     """
@@ -200,7 +209,7 @@ def load_planetoid_data(dataset_str):
 
 
 def prepare_data(model, labels, is_labeled, labeled_indices, held_out_indices,
-                 true_labels, leave_k, num_samples, seed, keep_prob, target_indices = None):
+                 true_labels, leave_k, num_samples, seed, keep_prob, target_indices, gcc_indices, nogcc_indices):
     """
     Construct masked data and validation data to be fed into the network.
     Data will have its labeled nodes masked according to leave_k.
@@ -211,7 +220,6 @@ def prepare_data(model, labels, is_labeled, labeled_indices, held_out_indices,
     - train_data: Each row corresponds to leave-k-out data.
                   Hence, input is (num_nodes, num_samples, num_classes)
     """
-    np.random.seed(seed)
     num_nodes, num_classes = labels.shape
 
     # set number of samples
@@ -244,11 +252,21 @@ def prepare_data(model, labels, is_labeled, labeled_indices, held_out_indices,
     else:
         validation_labeled = true_labeled
 
-
     target_labeled = np.zeros(num_nodes)
     target_labeled[target_indices] = 1
     target_labeled = np.repeat(target_labeled.reshape(num_nodes, 1), num_classes, axis=-1)
     target_labeled = target_labeled.reshape(num_nodes, 1, num_classes)
+
+    gcc_labeled = np.zeros(num_nodes)
+    gcc_labeled[gcc_indices] = 1
+    gcc_labeled = np.repeat(gcc_labeled.reshape(num_nodes, 1), num_classes, axis=-1)
+    gcc_labeled = gcc_labeled.reshape(num_nodes, 1, num_classes)
+
+    nogcc_labeled = np.zeros(num_nodes)
+    nogcc_labeled[nogcc_indices] = 1
+    nogcc_labeled = np.repeat(nogcc_labeled.reshape(num_nodes, 1), num_classes, axis=-1)
+    nogcc_labeled = nogcc_labeled.reshape(num_nodes, 1, num_classes)
+
     # construct validation data
     validation_data = {
         model.keep_prob: 1.0,
@@ -258,7 +276,9 @@ def prepare_data(model, labels, is_labeled, labeled_indices, held_out_indices,
         model.target_labeled: target_labeled,
         model.true_labeled: true_labeled,  # this will not be used
         model.validation_labeled: validation_labeled,
-        model.masked: masked  # this will not be used
+        model.masked: masked,  # this will not be used
+        model.gcc_labeled: gcc_labeled,
+        model.nogcc_labeled: nogcc_labeled
     }
 
     X = np.tile(labels, num_samples).reshape(num_nodes, num_samples,
@@ -289,13 +309,15 @@ def prepare_data(model, labels, is_labeled, labeled_indices, held_out_indices,
         model.target_labeled: target_labeled,
         model.true_labeled: true_labeled,
         model.validation_labeled: validation_labeled,
-        model.masked: masked
+        model.masked: masked,
+        model.gcc_labeled: gcc_labeled,
+        model.nogcc_labeled: nogcc_labeled
     }
 
     return train_data, validation_data, num_samples
 
 
-def calc_masks(true_labels, labeled_indices, unlabeled_indices):
+def calc_masks(true_labels, labeled_indices, unlabeled_indices, raw_features, logistic=False):
     """
     From labeled and unlabeled indices, return masks indicating
     whether each node is labeled or not.
@@ -310,9 +332,17 @@ def calc_masks(true_labels, labeled_indices, unlabeled_indices):
 
     # labels: num_nodes x num_classes matrix indicating labeling
     labels = true_labels.copy().astype(float)
-    # assign uniform probability to unlabled nodes
-    k = labels.shape[1]
-    labels[unlabeled_indices] = 1 / k
+    
+    if logistic:
+        print("Logistic Regression")
+        logreg = LogisticRegression(multi_class='multinomial',solver='lbfgs',class_weight='balanced')
+        logreg.fit(raw_features[labeled_indices].toarray(), np.argmax(labels[labeled_indices],axis=1))
+        y_pred = logreg.predict_proba(raw_features[unlabeled_indices].toarray())
+        labels[unlabeled_indices] = y_pred
+    else:
+        # assign uniform probability to unlabled nodes
+        k = labels.shape[1]
+        labels[unlabeled_indices] = 1 / k
 
     return labels, is_labeled
 
@@ -406,20 +436,22 @@ def create_seed_features_planetoid(graph, labeled_indices, true_labels):
     # for each label, find the closest (or average) distance to
     # seed with that label
     seed_features = []
+    inv_seed_to_node_lengths = 1 / (seed_to_node_lengths + 1)
     for label in labels_for_seeds_dict:
         indices = labels_for_seeds_dict[label]
-        label_seed_to_node_lengths = seed_to_node_lengths[indices]
-        label_min_len_to_seed = np.zeros(len(B.nodes()))
-        label_min_len_to_seed[subU_nodes] = np.min(
-            label_seed_to_node_lengths, axis=0)
-        label_min_len_to_seed = label_min_len_to_seed[sources]
+        label_inv_seed_to_node_lengths = inv_seed_to_node_lengths[indices]
+        label_max_len_to_seed = np.zeros(len(B.nodes()))
+        label_max_len_to_seed[subU_nodes] = np.max(
+            label_inv_seed_to_node_lengths, axis=0)
+        label_max_len_to_seed = label_max_len_to_seed[sources]
+        
         
         label_mean_len_to_seed = np.zeros(len(B.nodes()))
         label_mean_len_to_seed[subU_nodes] = np.mean(
-            label_seed_to_node_lengths, axis=0)
+            label_inv_seed_to_node_lengths, axis=0)
         label_mean_len_to_seed = label_mean_len_to_seed[sources]
         
-        seed_features.append(label_min_len_to_seed)
+        seed_features.append(label_max_len_to_seed)
         seed_features.append(label_mean_len_to_seed)
 
     # normalize
@@ -826,20 +858,21 @@ def edge_centralities(B, D, R, U, subU, in_subU, edges, d_to_b_indices, r_to_b_i
 
     # listify(nx.edge_load_centrality(U))
     # communicability_exp = nx.communicability_exp(U)
-    if nx.is_connected(U):
-        edge_current_flow_betweenness = listify(
-            nx.edge_current_flow_betweenness_centrality(U))
-        edge_current_flow_betweenness_full = edge_current_flow_betweenness[
-            u_to_b_indices]
-    else:
-        edge_current_flow_betweenness = listify(
-            nx.edge_current_flow_betweenness_centrality(subU))
-        edge_current_flow_betweenness_full = np.zeros(edges.shape[0])
-        edge_current_flow_betweenness_full[in_subU] = edge_current_flow_betweenness[u_to_b_indices]
+    # TODO: put this back!
+    # if nx.is_connected(U):
+    #     edge_current_flow_betweenness = listify(
+    #         nx.edge_current_flow_betweenness_centrality(U))
+    #     edge_current_flow_betweenness_full = edge_current_flow_betweenness[
+    #         u_to_b_indices]
+    # else:
+    #     edge_current_flow_betweenness = listify(
+    #         nx.edge_current_flow_betweenness_centrality(subU))
+    #     edge_current_flow_betweenness_full = np.zeros(edges.shape[0])
+    #     edge_current_flow_betweenness_full[in_subU] = edge_current_flow_betweenness[u_to_b_indices]
 
     edge_centralities = np.vstack(
         (edge_betweenness_D_full, edge_betweenness_R_full,
-        edge_betweenness_B_full, edge_current_flow_betweenness_full)).T
+        edge_betweenness_B_full)).T
     logger.info(f'edge_centralities generated: {edge_centralities.shape}')
     return edge_centralities
 
