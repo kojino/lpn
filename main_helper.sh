@@ -4,7 +4,7 @@
 #SBATCH -t 5-05:01:00
 #SBATCH --mem 3999
 #SBATCH -J edge_master
-#SBATCH -p general, shared
+#SBATCH -p shared
 
 python -m deeplp.main \
 --batch_size=${1} \
