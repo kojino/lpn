@@ -175,7 +175,6 @@ def load_planetoid_data(dataset_str):
     names = ['x', 'y', 'tx', 'ty', 'allx', 'ally', 'graph']
     objects = []
     for i in range(len(names)):
-        print(i)
         with open(os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', f"data/{dataset_str}/{names[i]}")), 'rb') as f:
             if sys.version_info > (3, 0):
                 objects.append(pkl.load(f, encoding='latin1'))

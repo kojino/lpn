@@ -251,7 +251,7 @@ def main(args):
                 gccaccs.append(gcc_accuracy)
                 nogccaccs.append(nogcc_accuracy)
             writer.add_summary(summary, global_step=epoch)
-            if epoch != 0 and (epoch + 1) % 10 == 0:
+            if epoch != 0 and (epoch + 1) % 1 == 0:
                 logger.info('saving checkpoint')
                 save_path = saver.save(sess, f"{ckpt_dir}/model.ckpt")
                 if args.save_params:
@@ -263,7 +263,7 @@ def main(args):
                         summary.append(gccaccs)
                         summary.append(nogccaccs)
                     if args.model == 'edge':
-                        np.savetxt(f'params/theta/theta_{exp_name}.csv', np.array(thetas),delimiter=',',fmt="%.6f")                    
+                        np.savetxt(f'params/theta/theta_{exp_name}.csv', np.array(thetas),delimiter=',',fmt="%.6f")     
                     np.savetxt(f'params/summary/summary_{exp_name}.csv', np.array(summary).T,delimiter=',',fmt="%.6f")
         writer.close()
         finalvalaccs.append(validation_accuracy)
