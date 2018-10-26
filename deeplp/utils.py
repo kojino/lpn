@@ -135,6 +135,8 @@ def load_and_prepare_planetoid_data(data_path, setting, seed=-1):
         num_unlabeled = unlabeled_indices.shape[0]
         if 'random' in setting:
             print('random')
+            if 'val_as_train' in setting:
+                num_unlabeled = num_nodes - len(labeled_indices) - len(validation_indices)
             # from each class, sample at least one index for labeled
             labeled_indices_from_class = []
             for class_id in range(num_classes):
@@ -155,7 +157,7 @@ def load_and_prepare_planetoid_data(data_path, setting, seed=-1):
             for class_id in range(num_classes):
                 labeled_indices += list(np.random.choice(np.where(true_labels[:, class_id])[0],20, replace=False))
             unlabeled_indices = np.delete(np.arange(num_nodes), labeled_indices)
-        test_val_indices = np.random.choice(unlabeled_indices,len(validation_indices)+len(test_indices))
+        test_val_indices = np.random.choice(unlabeled_indices,len(validation_indices)+len(test_indices),replace=False)
         validation_indices = test_val_indices[:len(validation_indices)]
         test_indices = test_val_indices[len(validation_indices):]
         gcc_unlabeled_indices = list(set.intersection(gcc_indices, set(unlabeled_indices)))

@@ -36,6 +36,7 @@ def main(args):
 
     if args.crossval_k != 1:
         args.num_epoch = int(args.num_epoch / args.crossval_k)
+    print(args.num_epoch)
 
     if args.ckpt == "0":
         args.ckpt = 0
