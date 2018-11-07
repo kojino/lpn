@@ -260,9 +260,9 @@ def main(args):
                 gccaccs.append(gcc_accuracy)
                 nogccaccs.append(nogcc_accuracy)
             writer.add_summary(summary, global_step=epoch)
-            if epoch != 0 and (epoch + 1) % 1 == 0:
-                logger.info('saving checkpoint')
-                save_path = saver.save(sess, f"{ckpt_dir}/model.ckpt")
+            if epoch != 0 and (epoch + 1) % 10 == 0:
+                # logger.info('saving checkpoint')
+                # save_path = saver.save(sess, f"{ckpt_dir}/model.ckpt")
                 if args.save_params:
                     summary = [cvs,accs,losses,as_,bs_,objectives]
                     if args.crossval_k > 1 or args.setting == 'planetoid_balanced':

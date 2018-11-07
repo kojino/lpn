@@ -378,7 +378,7 @@ def create_seed_features(graph, labeled_indices, true_labels):
     B = U.to_directed()
     edges = np.array(B.edges())
     sources, _ = edges[:, 0], edges[:, 1]
-
+    print(1)
     # calculate shortest path length to each seed node
     seed_to_node_lengths = []  # num_labeled * num_nodes matrix
     for i in labeled_indices:
@@ -395,7 +395,7 @@ def create_seed_features(graph, labeled_indices, true_labels):
             labels_for_seeds_dict[label].append(i)
         else:
             labels_for_seeds_dict[label] = [i]
-
+    print(2)
     # for each label, find the closest (or average) distance to
     # seed with that label
     seed_features = []
@@ -408,7 +408,7 @@ def create_seed_features(graph, labeled_indices, true_labels):
             label_seed_to_node_lengths, axis=0)[sources]
         seed_features.append(label_min_len_to_seed)
         seed_features.append(label_mean_len_to_seed)
-
+    print(3)
     # find overall closest (or average) distance to seed
     min_len_to_seed = np.min(seed_to_node_lengths, axis=0)[sources]
     mean_len_to_seed = np.mean(seed_to_node_lengths, axis=0)[sources]
