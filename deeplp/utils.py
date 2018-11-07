@@ -123,7 +123,6 @@ def load_and_prepare_planetoid_data(data_path, setting, seed=-1):
     unlabeled_indices = np.where(1-np.sum(y_train,axis=1))[0]
     validation_indices = np.where(np.sum(y_val,axis=1))[0]
     test_indices = np.where(np.sum(y_test,axis=1))[0]
-    print('=========================',len(labeled_indices))
     G = nx.from_scipy_sparse_matrix(graph)
     gcc_indices = set(max(nx.connected_component_subgraphs(G), key=len).nodes())
     nogcc_indices = np.delete(np.arange(num_nodes), np.array(list(gcc_indices)))
@@ -164,7 +163,6 @@ def load_and_prepare_planetoid_data(data_path, setting, seed=-1):
         nogcc_unlabeled_indices = list(set.intersection(set(nogcc_indices), set(unlabeled_indices)))
     else:
         print('fixed seed')
-    print('=========================',len(labeled_indices))
     return true_labels, features, raw_features, graph, labeled_indices, unlabeled_indices, test_indices, gcc_unlabeled_indices, nogcc_unlabeled_indices, validation_indices
 
 def load_planetoid_data(dataset_str):

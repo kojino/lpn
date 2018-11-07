@@ -56,7 +56,7 @@ def main(args):
     # change exp_name to include any varying parameters
     date = datetime.datetime.now()
     exp_name = (
-        f"deeplp_{args.data}_{args.setting}_{args.lamda}_{args.split_seed}_{args.crossval_k}")
+        f"deeplp_{args.data}_{args.lamda}_{args.split_seed}_{args.unlabel_prob}")
 
     # create directory and file for saving log
     exp_dir = 'experiment_results/' + exp_name
@@ -82,6 +82,7 @@ def main(args):
         labeled_indices, unlabeled_indices = \
             random_unlabel(true_labels, args.unlabel_prob, args.split_seed)
         target_indices, gcc_indices, nogcc_indices = unlabeled_indices, unlabeled_indices, unlabeled_indices
+        # _, _, raw_features, _, _, _, _, _, _, _ = load_and_prepare_planetoid_data(args.data+ '_planetoid', args.setting+ '_planetoid', seed=args.split_seed)
     elif 'planetoid' in args.setting:
         true_labels, features, raw_features, graph, labeled_indices, unlabeled_indices, target_indices, gcc_indices, nogcc_indices, validation_indices = load_and_prepare_planetoid_data(args.data, args.setting, seed=args.split_seed)
 
@@ -128,7 +129,6 @@ def main(args):
     if args.crossval_k == 1:
         cv_held_out_indices_list = [[]]
     finalvalaccs = []
-    print('==================',labeled_indices)
     cvs = []
     thetas = []
     as_ = []
@@ -140,6 +140,7 @@ def main(args):
     targetaccs = []
     gccaccs = []
     nogccaccs = []
+    print(len(labeled_indices))
 
     for i, cv_held_out_indices in enumerate(cv_held_out_indices_list):
         logger.info(f"{i}th cross validation")
@@ -184,7 +185,6 @@ def main(args):
             train_data, validation_data, num_samples = prepare_data(model,
                 cv_labels, cv_is_labeled, cv_labeled_indices, cv_held_out_indices, true_labels,
                 args.leave_k, args.num_samples, args.split_seed, args.keep_prob, target_indices, gcc_indices, nogcc_indices)
-        print('========================',num_samples)
         
         logger.info('Model built.')
         print(num_samples)
