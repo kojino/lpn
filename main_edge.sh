@@ -2,14 +2,14 @@
 #SBATCH -o val1.%j.txt
 #SBATCH -e val1.%j.err
 #SBATCH -t 05:01:00
-#SBATCH --mem 2999
+#SBATCH --mem 11999
 #SBATCH -J edge_master
-#SBATCH -p serial_requeue
+#SBATCH --reservation=koshiba
 
 batch_sizes=(1000)
 bifurcations=(0.001)
 crossval_ks=(1)
-datas=('linqs_cora' 'linqs_citeseer')
+datas=('linqs_pubmed')
 decays=(0)
 feature_types=('all')
 keep_probs=(1.0)
@@ -25,7 +25,7 @@ num_sampless=(1000)
 save_params=1
 settings=('lpn')
 split_seeds=(0 1 2 3 4 5 6 7 8 9)
-unlabel_probs=(0.95 0.96 0.97 0.98 0.99)
+unlabel_probs=(0.9925 0.995 0.9975 0.99)
 weighted_loss=1
 
 for setting in ${settings[@]}
