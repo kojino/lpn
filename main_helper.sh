@@ -2,9 +2,10 @@
 #SBATCH -o val2.%j.txt
 #SBATCH -e val2.%j.err
 #SBATCH -t 5-05:01:00
-#SBATCH --mem 11999
+#SBATCH --mem 2999
 #SBATCH -J edge_master
-#SBATCH --reservation=koshiba
+#SBATCH -p serial_requeue
+#SBATCH --account=ysinger_group
 
 python -m deeplp.main \
 --batch_size=${1} \
