@@ -2,7 +2,7 @@
 #SBATCH -o val1.%j.txt
 #SBATCH -e val1.%j.err
 #SBATCH -t 05:01:00
-#SBATCH --mem 3999
+#SBATCH --mem 2999
 #SBATCH -J edge_master
 #SBATCH -p serial_requeue
 
