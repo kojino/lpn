@@ -19,10 +19,11 @@ class DeepLP_Full(DeepLP):
     def _init_weights(self):
         indices = np.vstack((self.graph.tocoo().row, self.graph.tocoo().col)).T
 
-        values = tf.get_variable('weights', shape=self.graph.tocoo().row.shape)
+        self.values = tf.get_variable(
+            'weights', shape=self.graph.tocoo().row.shape)
 
         weights_unnormalized = tf.SparseTensor(
-            indices, values, [self.num_nodes, self.num_nodes])
+            indices, self.values, [self.num_nodes, self.num_nodes])
         weights = tf.sparse_softmax(weights_unnormalized)
 
         return weights
@@ -30,5 +31,5 @@ class DeepLP_Full(DeepLP):
     def _regularize_loss(self):
         regularizer = tf.contrib.layers.l2_regularizer(scale=self.lamda)
         theta_penalty = tf.contrib.layers.apply_regularization(
-            regularizer, [self.weights])
+            regularizer, [self.values])
         return theta_penalty

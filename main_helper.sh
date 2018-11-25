@@ -4,7 +4,7 @@
 #SBATCH -t 5-05:01:00
 #SBATCH --mem 2999
 #SBATCH -J edge_master
-#SBATCH -p serial_requeue
+#SBATCH -p shared
 #SBATCH --account=ysinger_group
 
 python -m deeplp.main \
