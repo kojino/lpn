@@ -8,25 +8,25 @@
 #SBATCH --account=ysinger_group
 
 batch_sizes=(1000)
-bifurcations=(0.001)
+bifurcations=(0)
 crossval_ks=(1)
-datas=('linqs_cora' 'linqs_citeseer')
+datas=('linqs_cora')
 decays=(0)
 feature_types=('all')
 keep_probs=(1.0)
-lamdas=(-200 -14 -12 -10 -8 -6 -4 -2 0 2) 
+lamdas=(-200 -14 -12 -10 -8 -6 -4 -2 0 2 4) 
 leave_ks=(1)
 log='DEBUG'
 logistics=(0)
 lrs=(0.001)
-models=('edge')
+models=('full')
 num_epochs=(2000)
 num_layerss=(-1)
 num_sampless=(1000)
 save_params=1
 settings=('lpn')
 split_seeds=(0 1 2 3 4 5 6 7 8 9)
-unlabel_probs=(0.95 0.96 0.97 0.98 0.99)
+unlabel_probs=(0.99)
 weighted_loss=1
 
 for setting in ${settings[@]}

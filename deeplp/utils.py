@@ -51,6 +51,7 @@ def load_data(data_path, model='edge', feature_type='all'):
     
     y_path = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', f'data/{data_path}/labels.csv'))
     G_path = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', f'data/{data_path}/graph_symmetric.csv'))
+    raw_path = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', f'data/{data_path}/features_raw.csv'))
     if feature_type == 'all':
         x_path = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', f'data/{data_path}/features.csv'))
     elif feature_type == 'raw_reduced':
@@ -69,6 +70,9 @@ def load_data(data_path, model='edge', feature_type='all'):
     true_labels = array_to_one_hot(true_labels)
     logger.info(f"Loaded labels: {true_labels.shape}")
 
+    x = np.loadtxt(raw_path, delimiter=',')
+    raw_features = node_features_np_to_sparse(x)
+
     graph = np.loadtxt(G_path, delimiter=',')
     graph = edge_np_to_csr(graph)
     logger.info(f"Loaded graph: {graph.shape}")
@@ -83,7 +87,7 @@ def load_data(data_path, model='edge', feature_type='all'):
 
     logger.info("Loaded all data.")
 
-    return true_labels, features, graph
+    return true_labels, features, graph, raw_features
         
 def random_unlabel(true_labels, unlabel_prob, seed=None):
     """
@@ -974,3 +978,65 @@ def sample_mask(idx, l):
     mask = np.zeros(l)
     mask[idx] = 1
     return np.array(mask, dtype=np.bool)
+
+def create_weighted_graph(features,graph):
+    """Use RBF kernel to calculate the weights of edges
+    Input:
+        features: features to calculate the RBF kernel
+        sigma: RBF kernel parameter if None, set it to num_features * 10
+        graph: if [], construct a graph using RBF kernel, if given, use it
+        num_neighbors: number of neighbors (based on edge weights) to form edges
+    Returns:
+        weight matrix and graph matrix
+    """
+
+    print('Constructing weights...')
+
+    features_dense = features.toarray()
+
+    # estimate sigma by taking the average of the lowest weights for each node
+    def get_lowest_weight(row):
+        return np.sort(row[np.nonzero(row)])[::-1][-1]
+    D = euclidean_distances(features_dense, features_dense)
+    lowest_dists = np.apply_along_axis(get_lowest_weight,0,D*graph)
+    sigma = np.mean(lowest_dists)**2
+
+    # use rbf kernel to estimate weights between nodes
+    weights_dense = rbf_kernel(features_dense, gamma=1/sigma)
+
+    weights_sp = graph.multiply(weights_dense)
+
+    print('Done!')
+
+    return weights, graph, sigma
+
+def create_weighted_graph(features,graph):
+    """Use RBF kernel to calculate the weights of edges
+    Input:
+        features: features to calculate the RBF kernel
+        sigma: RBF kernel parameter if None, set it to num_features * 10
+        graph: if [], construct a graph using RBF kernel, if given, use it
+        num_neighbors: number of neighbors (based on edge weights) to form edges
+    Returns:
+        weight matrix and graph matrix
+    """
+
+    print('Constructing weights...')
+
+    features_dense = features.toarray()
+
+    # estimate sigma by taking the average of the lowest weights for each node
+    def get_lowest_weight(row):
+        return np.sort(row[np.nonzero(row)])[::-1][-1]
+    D = euclidean_distances(features_dense, features_dense)
+    lowest_dists = np.apply_along_axis(get_lowest_weight,0,D*graph)
+    sigma = np.mean(lowest_dists)**2
+
+    # use rbf kernel to estimate weights between nodes
+    weights_dense = rbf_kernel(features_dense, gamma=1/sigma)
+
+    weights_sp = graph.multiply(weights_dense)
+
+    print('Done!')
+
+    return weights_sp, graph, sigma

@@ -48,23 +48,27 @@ def sample_mask(idx, l):
     return np.array(mask, dtype=np.bool)
 
 
-def load_data(data_path,seed):
+def load_data(data_path, seed, unlabel_prob):
     """Load data, train/val only."""
     np.random.seed(seed)
 
     print("Loading graph...")
-    graph = np.loadtxt(data_path+'/Gsym.csv',delimiter=',')
-    num_nodes = int(max(max(graph[:,0]),max(graph[:,1])) + 1)
-    adj = csr_matrix((graph[:,2], (graph[:,0].astype(int), graph[:,1].astype(int))), shape=(num_nodes, num_nodes))
+    graph = np.loadtxt(data_path + '/Gsym.csv', delimiter=',')
+    num_nodes = int(max(max(graph[:, 0]), max(graph[:, 1])) + 1)
+    adj = csr_matrix(
+        (graph[:, 2], (graph[:, 0].astype(int), graph[:, 1].astype(int))),
+        shape=(num_nodes, num_nodes))
 
     print("Loading features...")
-    features = np.loadtxt(data_path+'/x.csv',delimiter=',')
-    num_nodes = int(np.max(features[:,0]) + 1)
-    num_features = int(np.max(features[:,1]) + 1)
-    features = csr_matrix((features[:,2], (features[:,0], features[:,1])), shape=(num_nodes, num_features))
+    features = np.loadtxt(data_path + '/x.csv', delimiter=',')
+    num_nodes = int(np.max(features[:, 0]) + 1)
+    num_features = int(np.max(features[:, 1]) + 1)
+    features = csr_matrix(
+        (features[:, 2], (features[:, 0], features[:, 1])),
+        shape=(num_nodes, num_features))
 
     print("Loading labels...")
-    true_labels = np.loadtxt(data_path+'/y.csv',delimiter=',')
+    true_labels = np.loadtxt(data_path + '/y.csv', delimiter=',')
 
     true_labels = array_to_one_hot(true_labels)
     labels = true_labels.copy().astype(float)
@@ -77,11 +81,19 @@ def load_data(data_path,seed):
     print(num_classes)
     labeled_indices_from_class = []
     for class_id in range(num_classes):
-        labeled_indices_from_class.append(np.random.choice(np.where(labels[:,class_id])[0]))
+        labeled_indices_from_class.append(
+            np.random.choice(np.where(labels[:, class_id])[0]))
     # sample indices to unlabel
-    unlabeled_indices = np.array(sorted(np.random.choice([i for i in range(num_nodes) if i not in labeled_indices_from_class],
-                                int(num_nodes * 0.99), replace=False)))
-    labeled_indices = np.delete(np.arange(num_nodes),unlabeled_indices)
+    unlabeled_indices = np.array(
+        sorted(
+            np.random.choice(
+                [
+                    i for i in range(num_nodes)
+                    if i not in labeled_indices_from_class
+                ],
+                int(num_nodes * unlabel_prob),
+                replace=False)))
+    labeled_indices = np.delete(np.arange(num_nodes), unlabeled_indices)
 
     train_mask.ravel()[unlabeled_indices] = False
     labels[unlabeled_indices] = 0
@@ -93,48 +105,70 @@ def load_data(data_path,seed):
     return adj, features, labels, unlabels, train_mask, val_mask
 
 
-def load_data_2(data_path,seed):
+def load_data_2(data_path, seed, unlabel_prob):
     """Load data, train/val/test"""
     np.random.seed(seed)
-
     """Load data."""
     print("Loading graph...")
-    graph = np.loadtxt(data_path+'/Gsym.csv',delimiter=',')
-    num_nodes = int(max(max(graph[:,0]),max(graph[:,1])) + 1)
-    adj = csr_matrix((graph[:,2], (graph[:,0], graph[:,1])), shape=(num_nodes, num_nodes))
+    graph = np.loadtxt(data_path + '/Gsym.csv', delimiter=',')
+    num_nodes = int(max(max(graph[:, 0]), max(graph[:, 1])) + 1)
+    adj = csr_matrix(
+        (graph[:, 2], (graph[:, 0], graph[:, 1])),
+        shape=(num_nodes, num_nodes))
 
     print("Loading features...")
-    features = np.loadtxt(data_path+'/x.csv',delimiter=',')
-    num_nodes = int(np.max(features[:,0]) + 1)
-    num_features = int(np.max(features[:,1]) + 1)
-    features = csr_matrix((features[:,2], (features[:,0], features[:,1])), shape=(num_nodes, num_features))
+    features = np.loadtxt(data_path + '/x.csv', delimiter=',')
+    num_nodes = int(np.max(features[:, 0]) + 1)
+    num_features = int(np.max(features[:, 1]) + 1)
+    features = csr_matrix(
+        (features[:, 2], (features[:, 0], features[:, 1])),
+        shape=(num_nodes, num_features))
 
     print("Loading labels...")
-    true_labels = np.loadtxt(data_path+'/y.csv',delimiter=',')
+    true_labels = np.loadtxt(data_path + '/y.csv', delimiter=',')
     true_labels = array_to_one_hot(true_labels)
 
     num_classes = true_labels.shape[1]
     print(num_classes)
     labeled_indices_from_class = []
     for class_id in range(num_classes):
-        labeled_indices_from_class.append(np.random.choice(np.where(true_labels[:,class_id])[0]))
+        labeled_indices_from_class.append(
+            np.random.choice(np.where(true_labels[:, class_id])[0]))
     # sample indices to unlabel
-    unlabeled_indices = np.array(sorted(np.random.choice([i for i in range(num_nodes) if i not in labeled_indices_from_class],
-                                int(num_nodes * 0.99), replace=False)))
-    labeled_indices = np.delete(np.arange(num_nodes),unlabeled_indices)
-    print(len(labeled_indices),len(unlabeled_indices))
+    unlabeled_indices = np.array(
+        sorted(
+            np.random.choice(
+                [
+                    i for i in range(num_nodes)
+                    if i not in labeled_indices_from_class
+                ],
+                int(num_nodes * unlabel_prob),
+                replace=False)))
+    labeled_indices = np.delete(np.arange(num_nodes), unlabeled_indices)
+    print(len(labeled_indices), len(unlabeled_indices))
 
     # labeled indices not used for validation
     unvalidation_labeled_indices_from_class = []
     for class_id in range(num_classes):
-        unvalidation_labeled_indices_from_class.append(np.random.choice(np.where(true_labels[labeled_indices,class_id])[0]))
-    validation_labeled_indices = np.array(sorted(np.random.choice([i for i in labeled_indices if i not in unvalidation_labeled_indices_from_class],
-                                int(len(labeled_indices) * 0.2), replace=False)))
-    unvalidation_labeled_indices = np.array([el for el in labeled_indices if el not in validation_labeled_indices])
+        unvalidation_labeled_indices_from_class.append(
+            np.random.choice(
+                np.where(true_labels[labeled_indices, class_id])[0]))
+    validation_labeled_indices = np.array(
+        sorted(
+            np.random.choice(
+                [
+                    i for i in labeled_indices
+                    if i not in unvalidation_labeled_indices_from_class
+                ],
+                int(len(labeled_indices) * 0.2),
+                replace=False)))
+    unvalidation_labeled_indices = np.array(
+        [el for el in labeled_indices if el not in validation_labeled_indices])
     # print(labeled_indices,unvalidation_labeled_indices,validation_labeled_indices)
     # print(len(validation_labeled_indices),len(unvalidation_labeled_indices),len(labeled_indices))
 
-    train_mask, val_mask, test_mask = np.zeros(num_nodes), np.zeros(num_nodes), np.zeros(num_nodes)
+    train_mask, val_mask, test_mask = np.zeros(num_nodes), np.zeros(
+        num_nodes), np.zeros(num_nodes)
     train_mask.fill(False)
     val_mask.fill(False)
     test_mask.fill(False)
@@ -144,7 +178,9 @@ def load_data_2(data_path,seed):
 
     # print(np.sum(train_mask),np.sum(val_mask),np.sum(test_mask),true_labels.shape[0])
 
-    y_train, y_val, y_test = true_labels.copy().astype(float), true_labels.copy().astype(float), true_labels.copy().astype(float)
+    y_train, y_val, y_test = true_labels.copy().astype(
+        float), true_labels.copy().astype(float), true_labels.copy().astype(
+            float)
     y_train[unlabeled_indices] = 0
     y_train[validation_labeled_indices] = 0
     y_val[unvalidation_labeled_indices] = 0
@@ -163,6 +199,7 @@ def array_to_one_hot(vec, num_classes=None):
     res = np.zeros((num_nodes, num_classes))
     res[np.arange(num_nodes), vec.astype(int)] = 1
     return res
+
 
 def load_random_data(size):
 

@@ -7,4 +7,5 @@
 #SBATCH -p shared
 python execute_cora_sparse.py \
 --data $1 \
---seed $2 
+--seed $2 \
+--unlabel_prob $3

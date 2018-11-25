@@ -24,7 +24,7 @@ sparse = True
 
 # training params
 batch_size = 1
-nb_epochs = 100000
+nb_epochs = 10000
 patience = 100
 lr = 0.005  # learning rate
 l2_coef = 0.0005  # weight decay
@@ -53,10 +53,10 @@ validation = True
 # Load data
 if validation:
     adj, features, y_train, y_val, y_test, train_mask, val_mask, test_mask = process.load_data_2(
-        dataset, seed)
+        dataset, seed, unlabel_prob)
 else:
     adj, features, y_train, y_test, train_mask, test_mask = process.load_data(
-        dataset, seed)
+        dataset, seed, unlabel_prob)
 features, spars = process.preprocess_features(features)
 
 nb_nodes = features.shape[0]

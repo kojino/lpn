@@ -11,7 +11,7 @@ import networkx as nx
 import numpy as np
 import tensorflow as tf
 from tensorflow.python import debug as tf_debug
-
+from deeplp.models.deeplp_full import DeepLP_Full
 from deeplp.models.deeplp_att import DeepLP_ATT
 from deeplp.models.deeplp_edge import DeepLP_Edge
 from deeplp.models.deeplp_wrbf import DeepLP_WRBF
@@ -56,7 +56,7 @@ def main(args):
     # change exp_name to include any varying parameters
     date = datetime.datetime.now()
     exp_name = (
-        f"deeplp_{args.data}_{args.lamda}_{args.split_seed}_{args.unlabel_prob}")
+        f"deeplp_{args.lamda}_{args.split_seed}")
 
     # create directory and file for saving log
     exp_dir = 'experiment_results/' + exp_name
@@ -76,13 +76,12 @@ def main(args):
         logger.debug("{0}: {1}".format(k, v))
     logger.debug("------")
     if args.setting == 'lpn':
-        true_labels, features, graph = load_data(
+        true_labels, features, graph, raw_features = load_data(
             args.data, model=args.model, feature_type=args.feature_type)
 
         labeled_indices, unlabeled_indices = \
             random_unlabel(true_labels, args.unlabel_prob, args.split_seed)
         target_indices, gcc_indices, nogcc_indices = unlabeled_indices, unlabeled_indices, unlabeled_indices
-        # _, _, raw_features, _, _, _, _, _, _, _ = load_and_prepare_planetoid_data(args.data+ '_planetoid', args.setting+ '_planetoid', seed=args.split_seed)
     elif 'planetoid' in args.setting:
         true_labels, features, raw_features, graph, labeled_indices, unlabeled_indices, target_indices, gcc_indices, nogcc_indices, validation_indices = load_and_prepare_planetoid_data(args.data, args.setting, seed=args.split_seed)
 
@@ -140,7 +139,6 @@ def main(args):
     targetaccs = []
     gccaccs = []
     nogccaccs = []
-    print(len(labeled_indices))
 
     for i, cv_held_out_indices in enumerate(cv_held_out_indices_list):
         logger.info(f"{i}th cross validation")
@@ -158,6 +156,8 @@ def main(args):
             Model = DeepLP_ATT
         elif args.model == 'edge':
             Model = DeepLP_Edge
+        elif args.model == 'full':
+            Model = DeepLP_Full
         else:
             Model = DeepLP_WRBF
         if args.lamda < -50:
@@ -340,7 +340,7 @@ if __name__ == '__main__':
         '--model',
         default='edge',
         help='model for propagation',
-        choices=['edge', 'att', 'wrbf'])
+        choices=['edge', 'att', 'wrbf', 'full'])
 
     parser.add_argument('--num_epoch', default=10, type=int,
                         help='number of epochs to run the model')
