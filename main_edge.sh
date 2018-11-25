@@ -4,7 +4,7 @@
 #SBATCH -t 05:01:00
 #SBATCH --mem 2999
 #SBATCH -J edge_master
-#SBATCH -p shared
+#SBATCH -p serial_requeue
 #SBATCH --account=ysinger_group
 
 batch_sizes=(1000)
