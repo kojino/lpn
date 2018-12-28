@@ -17,9 +17,7 @@ ckpt*
 cora*
 dblp*
 imdb*
-baselines*
 data*
-notebooks*
 experiment_results
 .vscode
 data
